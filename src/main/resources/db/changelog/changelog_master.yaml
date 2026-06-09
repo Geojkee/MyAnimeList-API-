@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      id: V1__Initial_scheme.sql
+      author: George (generated)
+      sqlFile:
+        path: db/changelog/changes/V1__Initial_scheme.sql
+        relativeToChangeFile: true
+        splitStatements: true
+        endDelimiter: ;
