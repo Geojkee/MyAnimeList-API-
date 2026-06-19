@@ -1,4 +1,4 @@
-package com.dwtd.myanimelist.features.auth.Enum;
+package com.dwtd.myanimelist.features.auth.enums;
 
 public enum Role {
 

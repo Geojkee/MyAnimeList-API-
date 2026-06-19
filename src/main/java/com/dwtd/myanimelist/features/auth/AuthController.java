@@ -1,8 +1,8 @@
 package com.dwtd.myanimelist.features.auth;
 
-import com.dwtd.myanimelist.features.auth.DTO.AuthResponse;
-import com.dwtd.myanimelist.features.auth.DTO.LoginRequest;
-import com.dwtd.myanimelist.features.auth.DTO.RegisterRequest;
+import com.dwtd.myanimelist.features.auth.dto.AuthResponse;
+import com.dwtd.myanimelist.features.auth.dto.LoginRequest;
+import com.dwtd.myanimelist.features.auth.dto.RegisterRequest;
 import com.dwtd.myanimelist.features.auth.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,12 +19,12 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/sign-up")
-    public AuthResponse signUp(@RequestBody @Valid RegisterRequest request){
+    public AuthResponse signUp(@RequestBody @Valid RegisterRequest request) {
         return authService.signUp(request);
     }
 
     @PostMapping("/sign-in")
-    public AuthResponse signIn(@RequestBody @Valid LoginRequest request){
+    public AuthResponse signIn(@RequestBody @Valid LoginRequest request) {
         return authService.signIn(request);
     }
 }

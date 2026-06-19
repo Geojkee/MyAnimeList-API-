@@ -1,9 +1,4 @@
 spring:
-  security:
-    user:
-      name: admin
-      password: admin123
-      roles: ADMIN
   config:
     import: optional:file:.env[.properties]
   application:

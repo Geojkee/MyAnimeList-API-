@@ -11,7 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import java.security.Key;
+import javax.crypto.SecretKey;
 import java.util.*;
 import java.util.function.Function;
 
@@ -20,10 +20,10 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public class JwtService {
 
-    @Value("${jwt.secret:defaultNotSecretKeyJWT}")
+    @Value("${jwt.secret}")
     private String secretKey;
 
-    @Value("${jwt.expiration:3600000}")
+    @Value("${jwt.expiration}")
     private Long token_expiration_MS;
 
     public String generateToken(UserDetails userDetails) {
@@ -71,11 +71,15 @@ public class JwtService {
     }
 
     private Claims extractAllClaims(String token){
-        return Jwts.parser().setSigningKey(getKey()).build().parseClaimsJws(token)
-                .getBody();
+
+        return Jwts.parser()
+                .verifyWith(getKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
-    private Key getKey(){
+    private SecretKey getKey(){
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }

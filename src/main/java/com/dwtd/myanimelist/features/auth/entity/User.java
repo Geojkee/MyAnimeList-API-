@@ -1,6 +1,7 @@
 package com.dwtd.myanimelist.features.auth.entity;
 
-import com.dwtd.myanimelist.features.auth.Enum.Role;
+import com.dwtd.myanimelist.features.auth.enums.Role;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -35,21 +36,13 @@ public class User implements UserDetails {
 
     @Column(name = "role", nullable = false)
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     private Role role = Role.ROLE_USER;
 
     @Column(name = "created_at")
+    @Builder.Default
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "UTC")
     private Instant createdAt = Instant.now();
-
-    public User(
-            String username,
-            String email,
-            String password
-    ) {
-        this.username = username;
-        this.email = email;
-        this.password = password;
-        this.createdAt = Instant.now();
-    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
