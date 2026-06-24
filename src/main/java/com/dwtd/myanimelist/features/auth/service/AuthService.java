@@ -33,7 +33,7 @@ public class AuthService {
                 .role(Role.ROLE_USER)
                 .build();
 
-        var saveduser = userService.create(user);
+        User saveduser = userService.create(user);
 
         var jwt = jwtService.generateToken(saveduser);
 
