@@ -1,5 +1,8 @@
 package com.dwtd.myanimelist.features.auth.service;
 
+import com.dwtd.myanimelist.exception.EmailAlreadyExistsException;
+import com.dwtd.myanimelist.exception.UserNotFoundException;
+import com.dwtd.myanimelist.exception.UsernameAlreadyExistsException;
 import com.dwtd.myanimelist.features.auth.entity.User;
 import com.dwtd.myanimelist.features.auth.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -25,10 +28,10 @@ public class UserService implements UserDetailsService{
     @Transactional
     public User create(User user) {
         if (userRepository.existsByUsername(user.getUsername())) {
-            throw new RuntimeException("User with username " + user.getUsername() + " already exists");
+            throw new UsernameAlreadyExistsException(user.getUsername());
         }
         if (userRepository.existsByEmail(user.getEmail())) {
-            throw new RuntimeException("User with  email " + user.getEmail() + " already exists");
+            throw new EmailAlreadyExistsException(user.getEmail());
         }
 
         return save(user);
@@ -36,7 +39,7 @@ public class UserService implements UserDetailsService{
 
     public User getByUsername(String username) {
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException(username));
     }
 
     public User getCurrentUser() {
