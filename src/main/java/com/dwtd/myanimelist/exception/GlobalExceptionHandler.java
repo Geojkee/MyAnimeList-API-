@@ -9,7 +9,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.access.AccessDeniedException;
 import java.time.Instant;
 import java.util.List;
@@ -60,25 +59,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
-    @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ErrorResponse> handleAuthenticationException(
-            AuthenticationException exception,
-            HttpServletRequest request
-    ){
-        log.warn("Authentification errors: {}", exception.getMessage());
-
-        ErrorResponse response = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .status(HttpStatus.UNAUTHORIZED.value())
-                .error(HttpStatus.UNAUTHORIZED.getReasonPhrase())
-                .message("Invalid credentials")
-                .path(request.getRequestURI())
-                .errorCode("UNAUTHORIZED")
-                .build();
-
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
-    }
-
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDeniedException(
             AccessDeniedException exception,
@@ -87,7 +67,6 @@ public class GlobalExceptionHandler {
         log.warn("Access denied: {}", exception.getMessage());
 
         ErrorResponse response = ErrorResponse.builder()
-                .timestamp(Instant.now())
                 .timestamp(Instant.now())
                 .status(HttpStatus.FORBIDDEN.value())
                 .error(HttpStatus.FORBIDDEN.getReasonPhrase())
