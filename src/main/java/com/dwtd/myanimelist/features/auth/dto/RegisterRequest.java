@@ -12,7 +12,6 @@ public record RegisterRequest(
 
         @NotBlank(message = "Email is required")
         @Email(message = "Invalid email format")
-        @Size(min = 12, max = 30, message = "size must be between {min} and {max}")
         String email,
 
         @NotBlank(message = "Password is required")
