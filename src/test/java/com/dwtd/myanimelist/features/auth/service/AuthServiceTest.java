@@ -1,5 +1,6 @@
 package com.dwtd.myanimelist.features.auth.service;
 
+import com.dwtd.myanimelist.exception.InvalidCredentialsException;
 import com.dwtd.myanimelist.features.auth.dto.AuthResponse;
 import com.dwtd.myanimelist.features.auth.dto.LoginRequest;
 import com.dwtd.myanimelist.features.auth.dto.RegisterRequest;
@@ -12,8 +13,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,9 +31,6 @@ public class AuthServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
-
-    @Mock
-    private AuthenticationManager authenticationManager;
 
     @InjectMocks
     private AuthService authService;
@@ -101,16 +97,15 @@ public class AuthServiceTest {
     void signIn_ShouldAuthenticateAndReturnAuthResponse() {
         LoginRequest request = new LoginRequest("TestUser", "Password123");
 
-        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenReturn(null);
-
         User user = User.builder()
                 .id(1L)
+                .password("encodedPassword")
                 .username("TestUser")
                 .role(Role.ROLE_USER)
                 .build();
 
-        when(userService.loadUserByUsername("TestUser")).thenReturn(user);
+        when(userService.getByUsername("TestUser")).thenReturn(user);
+        when(passwordEncoder.matches("Password123", "encodedPassword")).thenReturn(true);
 
         String token = "jwt.token.here";
         when(jwtService.generateToken(user)).thenReturn(token);
@@ -122,24 +117,30 @@ public class AuthServiceTest {
         assertThat(response.token()).isEqualTo(token);
         assertThat(response.role()).isEqualTo(Role.ROLE_USER);
 
-        verify(authenticationManager).authenticate(
-                new UsernamePasswordAuthenticationToken("TestUser", "Password123")
-        );
-        verify(userService).loadUserByUsername("TestUser");
+        verify(userService).getByUsername("TestUser");
+        verify(passwordEncoder).matches("Password123", "encodedPassword");
+        verify(jwtService).generateToken(user);
     }
 
     @Test
     void signIn_ShouldThrowException_WhenAuthenticationFails() {
-        LoginRequest request = new LoginRequest("TestUser", "wrongPass");
+        LoginRequest request = new LoginRequest("TestUser", "WrongPassword");
 
-        when(authenticationManager.authenticate(any()))
-                .thenThrow(new RuntimeException("Bad credentials"));
+        User user = User.builder()
+                .username("TestUser")
+                .password("encodedPassword")
+                .build();
+
+        when(userService.getByUsername("TestUser")).thenReturn(user);
+        when(passwordEncoder.matches("WrongPassword", "encodedPassword")).thenReturn(false);
+
 
         assertThatThrownBy(() -> authService.signIn(request))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Bad credentials");
+                .isInstanceOf(InvalidCredentialsException.class)
+                .hasMessageContaining("invalid credentials");
 
-        verify(authenticationManager).authenticate(any());
+        verify(userService).getByUsername("TestUser");
+        verify(passwordEncoder).matches("WrongPassword", "encodedPassword");
         verifyNoInteractions(jwtService);
     }
 }
