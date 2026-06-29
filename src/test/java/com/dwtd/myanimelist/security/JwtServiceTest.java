@@ -60,24 +60,24 @@ public class JwtServiceTest {
 
         String token = jwtService.generateToken(user);
 
-        boolean isValid = jwtService.isTokenValid(token, user);
+        boolean isValid = jwtService.isTokenValid(token, user.getUsername());
 
         assertThat(isValid).isTrue();
     }
 
     @Test
     void isTokenValid_ShouldReturnFalse_WhenUsernameMismatch() {
-        User username1 = User.builder()
+        User user1 = User.builder()
                 .username("TestUser1")
                 .build();
 
-        User username2 = User.builder()
+        User user2 = User.builder()
                 .username("TestUser2")
                 .build();
 
-        String token = jwtService.generateToken(username1);
+        String token = jwtService.generateToken(user1);
 
-        boolean isValid = jwtService.isTokenValid(token, username2);
+        boolean isValid = jwtService.isTokenValid(token, user2.getUsername());
 
         assertThat(isValid).isFalse();
     }
@@ -93,7 +93,7 @@ public class JwtServiceTest {
 
         Thread.sleep(1500);
 
-        boolean isValid = jwtService.isTokenValid(token, user);
+        boolean isValid = jwtService.isTokenValid(token, user.getUsername());
 
         assertThat(isValid).isFalse();
     }

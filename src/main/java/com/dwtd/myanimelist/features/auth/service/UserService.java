@@ -6,16 +6,13 @@ import com.dwtd.myanimelist.exception.UsernameAlreadyExistsException;
 import com.dwtd.myanimelist.features.auth.entity.User;
 import com.dwtd.myanimelist.features.auth.repository.UserRepository;
 import jakarta.transaction.Transactional;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class UserService implements UserDetailsService {
+public class UserService {
 
     private final UserRepository userRepository;
 
@@ -50,11 +47,6 @@ public class UserService implements UserDetailsService {
 
         var username = authentication.getName();
 
-        return getByUsername(username);
-    }
-
-    @Override
-    public @NonNull UserDetails loadUserByUsername(@NonNull String username) throws UserNotFoundException {
         return getByUsername(username);
     }
 }
