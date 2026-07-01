@@ -53,6 +53,18 @@ public class JwtServiceTest {
     }
 
     @Test
+    void extractRole() {
+        User user = User.builder()
+                .username("TestUser")
+                .build();
+
+        String token = jwtService.generateToken(user);
+
+        String role = jwtService.extractRole(token);
+        assertThat(role).isEqualTo("ROLE_USER");
+    }
+
+    @Test
     void isTokenValid_ShouldReturnTrue_ForValidToken() {
         User user = User.builder()
                 .username("TestUser")

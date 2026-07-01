@@ -3,6 +3,7 @@ package com.dwtd.myanimelist.security;
 import com.dwtd.myanimelist.features.auth.entity.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -29,18 +30,12 @@ public class JwtService {
     public String generateToken(User user) {
         Map<String, Object> claims = new HashMap<>();
 
-        if (user instanceof User customUserDetails) {
-            claims.put("id", customUserDetails.getId());
-            claims.put("email", customUserDetails.getEmail());
-            claims.put("role", customUserDetails.getRole());
-        }
+        claims.put("id", user.getId());
+        claims.put("email", user.getEmail());
+        claims.put("role", user.getRole().name());
 
-        return generateToken(claims, user);
-    }
-
-    private String generateToken(Map<String, Object> extraClaims, User user) {
         return Jwts.builder()
-                .claims(extraClaims)
+                .claims(claims)
                 .subject(user.getUsername())
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + token_expiration_MS))
@@ -48,20 +43,27 @@ public class JwtService {
                 .compact();
     }
 
-    public boolean isTokenValid(String token, String username){
+    public boolean isTokenValid(String token, String username) {
         try {
             final String extractedUsername = extractUsername(token);
             return extractedUsername.equals(username) && !isTokenExpired(token);
-        } catch (ExpiredJwtException exception){
+        } catch (ExpiredJwtException exception) {
+            return false;
+        } catch (JwtException exception) {
+            log.warn("Invalid JWT token: {}", exception.getMessage());
             return false;
         }
     }
 
-    public String extractUsername(String token){
+    public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
-    private boolean isTokenExpired(String token){
+    public String extractRole(String token) {
+        return extractClaim(token, claims -> claims.get("role", String.class));
+    }
+
+    private boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
 
@@ -74,7 +76,7 @@ public class JwtService {
         return claimsResolvers.apply(claims);
     }
 
-    private Claims extractAllClaims(String token){
+    private Claims extractAllClaims(String token) {
 
         return Jwts.parser()
                 .verifyWith(getKey())
@@ -83,7 +85,7 @@ public class JwtService {
                 .getPayload();
     }
 
-    private SecretKey getKey(){
+    private SecretKey getKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
