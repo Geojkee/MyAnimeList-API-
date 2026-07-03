@@ -7,3 +7,12 @@ databaseChangeLog:
         relativeToChangeFile: true
         splitStatements: true
         endDelimiter: ;
+
+  - changeSet:
+      id: V2__create_refresh_token_table.sql
+      author: George (generated)
+      sqlFile:
+        path: db/changelog/changes/V2__create_refresh_token_table.sql
+        relativeToChangeFile: true
+        splitStatements: true
+        endDelimiter: ;
