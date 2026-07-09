@@ -36,7 +36,8 @@ public class SecurityConfiguration {
                     return corsConfiguration;
                 }))
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/auth/sign-up", "/auth/sign-in", "/auth/refresh").permitAll()
+                        .requestMatchers("/auth/logout" ).authenticated()
                         .requestMatchers("/swagger-ui/**", "/swagger-resource/*", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/endpoint", "/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())

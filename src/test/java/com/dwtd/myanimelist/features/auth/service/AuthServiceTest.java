@@ -1,12 +1,15 @@
 package com.dwtd.myanimelist.features.auth.service;
 
-import com.dwtd.myanimelist.exception.InvalidCredentialsException;
+import com.dwtd.myanimelist.exception.user.InvalidCredentialsException;
 import com.dwtd.myanimelist.features.auth.dto.AuthResponse;
 import com.dwtd.myanimelist.features.auth.dto.LoginRequest;
+import com.dwtd.myanimelist.features.auth.dto.RefreshTokenResponse;
 import com.dwtd.myanimelist.features.auth.dto.RegisterRequest;
+import com.dwtd.myanimelist.features.auth.entity.RefreshToken;
 import com.dwtd.myanimelist.features.auth.entity.User;
 import com.dwtd.myanimelist.features.auth.enums.Role;
 import com.dwtd.myanimelist.security.JwtService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -34,6 +37,12 @@ public class AuthServiceTest {
 
     @InjectMocks
     private AuthService authService;
+
+    @Mock
+    private HttpServletResponse mockResponse;
+
+    @Mock
+    private RefreshTokenService refreshTokenService;
 
     @Test
     void signUp_ShouldRegisterUserAndReturnAuthResponse() {
@@ -110,7 +119,12 @@ public class AuthServiceTest {
         String token = "jwt.token.here";
         when(jwtService.generateToken(user)).thenReturn(token);
 
-        AuthResponse response = authService.signIn(request);
+        RefreshToken refreshToken = RefreshToken.builder()
+                .token("refresh-token-uuid")
+                .build();
+        when(refreshTokenService.createRefreshToken(user)).thenReturn(refreshToken);
+
+        AuthResponse response = authService.signIn(request, mockResponse);
 
         assertThat(response.userId()).isEqualTo(1L);
         assertThat(response.username()).isEqualTo("TestUser");
@@ -120,6 +134,8 @@ public class AuthServiceTest {
         verify(userService).getByUsername("TestUser");
         verify(passwordEncoder).matches("Password123", "encodedPassword");
         verify(jwtService).generateToken(user);
+        verify(refreshTokenService).createRefreshToken(user);
+        verify(mockResponse).addHeader(eq("Set-Cookie"), anyString());
     }
 
     @Test
@@ -135,12 +151,52 @@ public class AuthServiceTest {
         when(passwordEncoder.matches("WrongPassword", "encodedPassword")).thenReturn(false);
 
 
-        assertThatThrownBy(() -> authService.signIn(request))
+        assertThatThrownBy(() -> authService.signIn(request, mockResponse))
                 .isInstanceOf(InvalidCredentialsException.class)
                 .hasMessageContaining("invalid credentials");
 
         verify(userService).getByUsername("TestUser");
         verify(passwordEncoder).matches("WrongPassword", "encodedPassword");
         verifyNoInteractions(jwtService);
+    }
+
+    @Test
+    void refresh_ShouldReturnNewAccessToken_WhenValidRefreshToken() {
+        String refreshTokenValue = "validRefreshToken";
+
+        RefreshToken refreshToken = mock(RefreshToken.class);
+
+        User user = User.builder().id(1L).username("TestUser").role(Role.ROLE_USER).build();
+
+        when(refreshTokenService.validateRefreshToken(refreshTokenValue)).thenReturn(refreshToken);
+        when(refreshToken.getUser()).thenReturn(user);
+
+        doNothing().when(refreshTokenService).revokeToken(refreshTokenValue);
+
+        RefreshToken newRefreshToken = mock(RefreshToken.class);
+
+        when(newRefreshToken.getToken()).thenReturn("newRefreshToken");
+        when(refreshTokenService.createRefreshToken(user)).thenReturn(newRefreshToken);
+        when(jwtService.generateToken(user)).thenReturn("newAccessToken");
+
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        RefreshTokenResponse responseDto = authService.refresh(refreshTokenValue, response);
+
+        assertThat(responseDto.accessToken()).isEqualTo("newAccessToken");
+        assertThat(responseDto.userId()).isEqualTo(1L);
+    }
+
+    @Test
+    void logout_ShouldRevokeTokenAndDeleteCookie() {
+        String refreshTokenValue = "validRefreshToken";
+
+        HttpServletResponse response = mock(HttpServletResponse.class);
+
+        doNothing().when(refreshTokenService).revokeToken(refreshTokenValue);
+
+        authService.logout(refreshTokenValue, response);
+
+        verify(refreshTokenService).revokeToken(refreshTokenValue);
+        verify(response).addHeader(eq("Set-Cookie"), anyString());
     }
 }

@@ -4,7 +4,6 @@ spring:
   application:
     name: MyAnimeList
 
-
   datasource:
     url: ${POSTGRES_URL}
     username: ${POSTGRES_USER}
@@ -21,11 +20,18 @@ spring:
     enabled: true
     change-log: classpath:/db/changelog/changelog_master.yaml
 
-
 logging:
   level:
     org.hibernate.sql: DEBUG
 
 jwt:
   secret: ${JWT_SECRET}
-  expiration: ${JWT_EXPIRATION:86400000}
+  expiration: ${JWT_EXPIRATION}
+
+app:
+  refresh-token:
+    duration-ms: ${REFRESH_TOKEN_DURATION}
+  cookie:
+    refresh-path: ${COOKIE_PATH}
+    max-age-seconds: ${REFRESH_TOKEN_MAX_AGE_SECONDS}
+    secure: ${COOKIE_SECURE}
