@@ -1,6 +1,6 @@
 package com.dwtd.myanimelist.features.auth.service;
 
-import com.dwtd.myanimelist.exception.InvalidCredentialsException;
+import com.dwtd.myanimelist.exception.user.InvalidCredentialsException;
 import com.dwtd.myanimelist.features.auth.dto.AuthResponse;
 import com.dwtd.myanimelist.features.auth.dto.LoginRequest;
 import com.dwtd.myanimelist.features.auth.dto.RefreshTokenResponse;
@@ -10,7 +10,6 @@ import com.dwtd.myanimelist.features.auth.enums.Role;
 import com.dwtd.myanimelist.features.auth.entity.User;
 import com.dwtd.myanimelist.security.JwtService;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -30,10 +29,15 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
 
-    @Value("${app.cookie.refresh-path:/auth}")
+    @Value("${app.cookie.refresh-path}")
     private String refreshCookiePath;
 
-    private static final long REFRESH_TOKEN_MAX_AGE_SECONDS = 30L * 24 * 60 * 60;
+    @Value("${app.cookie.max-age-seconds}")
+    private long refreshTokenMaxAgeSeconds;
+
+    @Value("${app.cookie.secure:false}")
+    private boolean cookieSecure;
+
 
     public AuthResponse signUp(RegisterRequest request) {
         log.info("Registering new user with username: {}", request.username());
@@ -104,7 +108,6 @@ public class AuthService {
                 .build();
     }
 
-    @Transactional
     public void logout(String refreshTokenValue, HttpServletResponse response){
         log.info("Logout with token: {}", refreshTokenValue);
         if (refreshTokenValue != null){
@@ -116,7 +119,7 @@ public class AuthService {
 
         ResponseCookie deleteCookie = ResponseCookie.from("refreshToken", "")
                 .httpOnly(true)
-                .secure(false)
+                .secure(cookieSecure)
                 .sameSite("Strict")
                 .path(refreshCookiePath)
                 .maxAge(0)
@@ -131,7 +134,7 @@ public class AuthService {
                 .secure(false)
                 .sameSite("Strict")
                 .path(refreshCookiePath)
-                .maxAge(Duration.ofSeconds(REFRESH_TOKEN_MAX_AGE_SECONDS))
+                .maxAge(Duration.ofSeconds(refreshTokenMaxAgeSeconds))
                 .build();
         response.addHeader("Set-Cookie", deleteCookie.toString());
     }

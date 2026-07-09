@@ -1,15 +1,17 @@
 package com.dwtd.myanimelist.features.auth.service;
 
-import com.dwtd.myanimelist.exception.EmailAlreadyExistsException;
-import com.dwtd.myanimelist.exception.UserNotFoundException;
-import com.dwtd.myanimelist.exception.UsernameAlreadyExistsException;
+import com.dwtd.myanimelist.exception.user.EmailAlreadyExistsException;
+import com.dwtd.myanimelist.exception.user.UserNotFoundException;
+import com.dwtd.myanimelist.exception.user.UsernameAlreadyExistsException;
 import com.dwtd.myanimelist.features.auth.entity.User;
 import com.dwtd.myanimelist.features.auth.repository.UserRepository;
-import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -18,7 +20,6 @@ public class UserService {
 
     private User save(User user) {
         return userRepository.save(user);
-
     }
 
     @Transactional
@@ -30,7 +31,9 @@ public class UserService {
             throw new EmailAlreadyExistsException(user.getEmail());
         }
 
-        return save(user);
+        User savedUser = save(user);
+        log.info("User created: username={}, email={}", savedUser.getUsername(), savedUser.getEmail());
+        return savedUser;
     }
 
     public User getByUsername(String username) {

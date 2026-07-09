@@ -37,7 +37,7 @@ public class RefreshToken {
     @Column(name = "revoked_at")
     private Instant revokedAt;
 
-    public boolean isRevoker(){
+    public boolean isRevoked(){
         return revokedAt != null;
     }
 
@@ -46,6 +46,6 @@ public class RefreshToken {
     }
 
     public boolean isValid(){
-        return !isRevoker() && !isExpired();
+        return !isRevoked() && !isExpired();
     }
 }

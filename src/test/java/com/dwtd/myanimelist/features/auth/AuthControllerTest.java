@@ -3,6 +3,7 @@ package com.dwtd.myanimelist.features.auth;
 import com.dwtd.myanimelist.features.auth.dto.LoginRequest;
 import com.dwtd.myanimelist.features.auth.dto.RegisterRequest;
 import com.dwtd.myanimelist.features.auth.entity.User;
+import com.dwtd.myanimelist.features.auth.repository.RefreshTokenRepository;
 import com.dwtd.myanimelist.features.auth.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import tools.jackson.databind.ObjectMapper;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -35,12 +37,16 @@ public class AuthControllerTest {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
+
     private final String USERNAME = "TestUser";
     private final String EMAIL = "test@example.com";
     private final String PASSWORD = "Password123";
 
     @BeforeEach
     void setUp() {
+        refreshTokenRepository.deleteAll();
         userRepository.deleteAll();
     }
 
@@ -153,5 +159,60 @@ public class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errorCode").value("USER_NOT_FOUND"));
+    }
+
+    @Test
+    void refresh_ShouldReturnNewAccessToken_WhenValidRefreshToken() throws Exception {
+        createUser();
+
+        LoginRequest loginRequest = new LoginRequest(
+                USERNAME,
+                PASSWORD
+        );
+
+        MvcResult loginResult = mockMvc.perform(post("/auth/sign-in")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String refreshToken = loginResult.getResponse().getCookie("refreshToken").getValue();
+
+        mockMvc.perform(post("/auth/refresh")
+                        .cookie(new jakarta.servlet.http.Cookie("refreshToken", refreshToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.username").value(USERNAME));
+    }
+
+    @Test
+    void logout_ShouldRevokeRefreshTokenAndDeleteCookie() throws Exception {
+        createUser();
+
+        LoginRequest loginRequest = new LoginRequest(
+                USERNAME,
+                PASSWORD
+        );
+
+        MvcResult loginResult = mockMvc.perform(post("/auth/sign-in")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String responseBody = loginResult.getResponse().getContentAsString();
+        String accessToken = objectMapper.readTree(responseBody).get("token").asText();
+
+        String refreshToken = loginResult.getResponse().getCookie("refreshToken").getValue();
+
+        mockMvc.perform(post("/auth/logout")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .cookie(new jakarta.servlet.http.Cookie("refreshToken", refreshToken)))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(post("/auth/refresh")
+                        .cookie(new jakarta.servlet.http.Cookie("refreshToken", refreshToken)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.errorCode").value("INVALID_REFRESH_TOKEN"));
     }
 }
