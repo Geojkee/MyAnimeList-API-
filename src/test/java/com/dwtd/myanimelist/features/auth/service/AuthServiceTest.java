@@ -1,5 +1,6 @@
 package com.dwtd.myanimelist.features.auth.service;
 
+import com.dwtd.myanimelist.exception.token.InvalidRefreshTokenException;
 import com.dwtd.myanimelist.exception.user.InvalidCredentialsException;
 import com.dwtd.myanimelist.features.auth.dto.AuthResponse;
 import com.dwtd.myanimelist.features.auth.dto.LoginRequest;
@@ -198,5 +199,17 @@ public class AuthServiceTest {
 
         verify(refreshTokenService).revokeToken(refreshTokenValue);
         verify(response).addHeader(eq("Set-Cookie"), anyString());
+    }
+
+    @Test
+    void refresh_ShouldThrowInvalidRefreshTokenException_WhenTokenRevoked() {
+        String revokedToken = "revoked-token";
+        doThrow(new InvalidRefreshTokenException()).when(refreshTokenService).validateRefreshToken(revokedToken);
+
+        assertThatThrownBy(() -> authService.refresh(revokedToken, mockResponse))
+                .isInstanceOf(InvalidRefreshTokenException.class);
+
+        verify(refreshTokenService).validateRefreshToken(revokedToken);
+        verify(refreshTokenService, never()).createRefreshToken(any());
     }
 }

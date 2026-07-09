@@ -79,6 +79,21 @@ public class AuthControllerTest {
     }
 
     @Test
+    void signUp_ShouldReturnBadRequest_WhenInvalidData() throws Exception {
+        RegisterRequest request = new RegisterRequest(
+                "",
+                "invalid-email",
+                "short"
+        );
+
+        mockMvc.perform(post("/auth/sign-up")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("VALIDATION_FAILED"));
+    }
+
+    @Test
     void signUp_ShouldReturnConflict_WhenUsernameAlreadyExists() throws Exception {
         createUser();
 
