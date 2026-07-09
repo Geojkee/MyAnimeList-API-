@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: ""
   datasource:
     url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
@@ -13,3 +15,15 @@ spring:
         dialect: org.hibernate.dialect.H2Dialect
   liquibase:
     enabled: false
+
+jwt:
+  secret: testSecretKeyThatIsAtLeast32CharactersLong12345
+  expiration: 86400000
+
+app:
+  refresh-token:
+    duration-ms: 2592000000
+  cookie:
+    refresh-path: /auth
+    max-age-seconds: 2592000
+    secure: false
