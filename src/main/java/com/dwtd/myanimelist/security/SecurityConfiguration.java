@@ -3,6 +3,7 @@ package com.dwtd.myanimelist.security;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -39,7 +40,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/auth/sign-up", "/auth/sign-in", "/auth/refresh").permitAll()
                         .requestMatchers("/auth/logout" ).authenticated()
                         .requestMatchers("/swagger-ui/**", "/swagger-resource/*", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/endpoint", "/admin/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/anime", "/anime/*").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

@@ -2,10 +2,17 @@ package com.dwtd.myanimelist.features.anime;
 
 import com.dwtd.myanimelist.features.anime.dto.AnimeRequest;
 import com.dwtd.myanimelist.features.anime.dto.AnimeResponse;
+import com.dwtd.myanimelist.features.anime.entity.Anime;
 import com.dwtd.myanimelist.features.anime.service.AnimeService;
+import com.dwtd.myanimelist.features.anime.specification.AnimeSpecification;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,6 +30,19 @@ public class AnimeController {
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<AnimeResponse> create(@RequestBody @Valid AnimeRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(animeService.create(request));
+    }
+
+    @GetMapping()
+    public ResponseEntity<Page<AnimeResponse>> getAll(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String status,
+            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.ASC) Pageable pageable
+    ){
+        Specification<Anime> spec = AnimeSpecification.filterBy(search, type, status);
+        Page<AnimeResponse> page = animeService.findAll(spec, pageable);
+
+        return ResponseEntity.status(HttpStatus.OK).body(page);
     }
 
     @GetMapping("/{id}")
