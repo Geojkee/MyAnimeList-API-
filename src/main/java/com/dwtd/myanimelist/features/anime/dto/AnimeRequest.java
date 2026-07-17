@@ -17,12 +17,11 @@ public record AnimeRequest(
         AnimeType type,
 
         @Min(value = 0, message = "Episode count must be at least 0")
-        int episodeCount,
+        Integer episodeCount,
 
         @NotNull(message = "Status is required")
         AnimeStatus status,
 
-        @NotNull(message = "Synopsis is required")
         String synopsis
 ) {
 }

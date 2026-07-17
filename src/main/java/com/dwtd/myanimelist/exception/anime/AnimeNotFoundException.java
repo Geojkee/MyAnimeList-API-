@@ -6,6 +6,6 @@ import org.springframework.http.HttpStatus;
 public class AnimeNotFoundException extends CustomException {
     public AnimeNotFoundException(Long id) {
         super("Anime with id " + id + " not found",
-                HttpStatus.NOT_FOUND, "ANINE_NOT_FOUND");
+                HttpStatus.NOT_FOUND, "ANIME_NOT_FOUND");
     }
 }
