@@ -24,6 +24,6 @@ app:
   refresh-token:
     duration-ms: 2592000000
   cookie:
-    refresh-path: /auth
+    refresh-path: /api/v1/auth
     max-age-seconds: 2592000
     secure: false

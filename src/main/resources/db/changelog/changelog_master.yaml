@@ -16,3 +16,12 @@ databaseChangeLog:
         relativeToChangeFile: true
         splitStatements: true
         endDelimiter: ;
+
+  - changeSet:
+      id: V3__add_unique_constraint_for_title_romaji.sql
+      author: George (generated)
+      sqlFile:
+        path: db/changelog/changes/V3__add_unique_constraint_for_title_romaji.sql
+        relativeToChangeFile: true
+        splitStatements: true
+        endDelimiter: ;

@@ -68,7 +68,7 @@ public class AuthControllerTest {
                 PASSWORD
         );
 
-        mockMvc.perform(post("/auth/sign-up")
+        mockMvc.perform(post("/api/v1/auth/sign-up")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -86,7 +86,7 @@ public class AuthControllerTest {
                 "short"
         );
 
-        mockMvc.perform(post("/auth/sign-up")
+        mockMvc.perform(post("/api/v1/auth/sign-up")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -103,7 +103,7 @@ public class AuthControllerTest {
                 PASSWORD
         );
 
-        mockMvc.perform(post("/auth/sign-up")
+        mockMvc.perform(post("/api/v1/auth/sign-up")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
@@ -120,7 +120,7 @@ public class AuthControllerTest {
                 PASSWORD
         );
 
-        mockMvc.perform(post("/auth/sign-up")
+        mockMvc.perform(post("/api/v1/auth/sign-up")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
@@ -136,7 +136,7 @@ public class AuthControllerTest {
                 PASSWORD
         );
 
-        mockMvc.perform(post("/auth/sign-in")
+        mockMvc.perform(post("/api/v1/auth/sign-in")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isOk())
@@ -155,7 +155,7 @@ public class AuthControllerTest {
                 "wrongPassword"
         );
 
-        mockMvc.perform(post("/auth/sign-in")
+        mockMvc.perform(post("/api/v1/auth/sign-in")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isUnauthorized())
@@ -169,7 +169,7 @@ public class AuthControllerTest {
                 PASSWORD
         );
 
-        mockMvc.perform(post("/auth/sign-in")
+        mockMvc.perform(post("/api/v1/auth/sign-in")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isNotFound())
@@ -185,7 +185,7 @@ public class AuthControllerTest {
                 PASSWORD
         );
 
-        MvcResult loginResult = mockMvc.perform(post("/auth/sign-in")
+        MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/sign-in")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isOk())
@@ -193,7 +193,7 @@ public class AuthControllerTest {
 
         String refreshToken = loginResult.getResponse().getCookie("refreshToken").getValue();
 
-        mockMvc.perform(post("/auth/refresh")
+        mockMvc.perform(post("/api/v1/auth/refresh")
                         .cookie(new jakarta.servlet.http.Cookie("refreshToken", refreshToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
@@ -209,7 +209,7 @@ public class AuthControllerTest {
                 PASSWORD
         );
 
-        MvcResult loginResult = mockMvc.perform(post("/auth/sign-in")
+        MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/sign-in")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isOk())
@@ -220,12 +220,12 @@ public class AuthControllerTest {
 
         String refreshToken = loginResult.getResponse().getCookie("refreshToken").getValue();
 
-        mockMvc.perform(post("/auth/logout")
+        mockMvc.perform(post("/api/v1/auth/logout")
                         .header("Authorization", "Bearer " + accessToken)
                         .cookie(new jakarta.servlet.http.Cookie("refreshToken", refreshToken)))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(post("/auth/refresh")
+        mockMvc.perform(post("/api/v1/auth/refresh")
                         .cookie(new jakarta.servlet.http.Cookie("refreshToken", refreshToken)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.errorCode").value("INVALID_REFRESH_TOKEN"));

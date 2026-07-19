@@ -1,5 +1,6 @@
 package com.dwtd.myanimelist.features.anime.service;
 
+import com.dwtd.myanimelist.exception.anime.AnimeExistsException;
 import com.dwtd.myanimelist.exception.anime.AnimeNotFoundException;
 import com.dwtd.myanimelist.features.anime.dto.AnimeRequest;
 import com.dwtd.myanimelist.features.anime.dto.AnimeResponse;
@@ -21,7 +22,11 @@ public class AnimeService {
     private final AnimeRepository animeRepository;
 
     @Transactional
-    public AnimeResponse create(AnimeRequest request){
+    public AnimeResponse create(AnimeRequest request) {
+        if (animeRepository.existsByTitleRomaji(request.titleRomaji())) {
+            throw new AnimeExistsException(request.titleRomaji());
+        }
+
         Anime anime = Anime.builder()
                 .titleRomaji(request.titleRomaji())
                 .titleEnglish(request.titleEnglish())
@@ -37,13 +42,13 @@ public class AnimeService {
     }
 
     @Transactional(readOnly = true)
-    public Page<AnimeResponse> findAll(Specification<Anime> specification, Pageable pageable){
+    public Page<AnimeResponse> findAll(Specification<Anime> specification, Pageable pageable) {
         return animeRepository.findAll(specification, pageable)
                 .map(this::mapToResponse);
     }
 
     @Transactional(readOnly = true)
-    public AnimeResponse findById(Long id){
+    public AnimeResponse findById(Long id) {
         Anime anime = animeRepository.findById(id)
                 .orElseThrow(() -> new AnimeNotFoundException(id));
 
@@ -51,9 +56,13 @@ public class AnimeService {
     }
 
     @Transactional
-    public AnimeResponse update(Long id, AnimeRequest request){
+    public AnimeResponse update(Long id, AnimeRequest request) {
         Anime findAnime = animeRepository.findById(id)
                 .orElseThrow(() -> new AnimeNotFoundException(id));
+
+        if (animeRepository.existsByTitleRomajiAndIdNot(request.titleRomaji(), id)) {
+            throw new AnimeExistsException(request.titleRomaji());
+        }
 
         findAnime.setTitleRomaji(request.titleRomaji());
         findAnime.setTitleEnglish(request.titleEnglish());
@@ -68,7 +77,7 @@ public class AnimeService {
     }
 
     @Transactional
-    public void delete(Long id){
+    public void delete(Long id) {
         if (!animeRepository.existsById(id)) {
             throw new AnimeNotFoundException(id);
         }
@@ -76,7 +85,7 @@ public class AnimeService {
         log.info("Anime deleted: id={}", id);
     }
 
-    private AnimeResponse mapToResponse(Anime anime){
+    private AnimeResponse mapToResponse(Anime anime) {
         return AnimeResponse.builder()
                 .id(anime.getId())
                 .titleRomaji(anime.getTitleRomaji())

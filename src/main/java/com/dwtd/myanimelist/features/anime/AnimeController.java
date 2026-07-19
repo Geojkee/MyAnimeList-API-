@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/anime")
+@RequestMapping("/api/v1/anime")
 @Tag(name = "Anime")
 public class AnimeController {
 

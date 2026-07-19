@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 
@@ -27,7 +28,7 @@ public class Anime {
     private String titleEnglish;
 
     @NotBlank
-    @Column(name = "title_romaji", nullable = false)
+    @Column(name = "title_romaji", nullable = false, unique = true)
     private String titleRomaji;
 
     @NotNull
@@ -55,7 +56,7 @@ public class Anime {
     private Instant createdAt = Instant.now();
 
     @Column(name = "updated_at")
-    @Builder.Default
+    @UpdateTimestamp
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "UTC")
     private Instant updatedAt = Instant.now();
 }

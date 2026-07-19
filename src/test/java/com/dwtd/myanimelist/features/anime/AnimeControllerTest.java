@@ -159,7 +159,7 @@ public class AnimeControllerTest {
 
     private String loginAndGetToken(String username, String password) throws Exception {
         LoginRequest loginRequest = new LoginRequest(username, password);
-        MvcResult result = mockMvc.perform(post("/auth/sign-in")
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/sign-in")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isOk())
@@ -171,7 +171,7 @@ public class AnimeControllerTest {
     @Test
     void create_anime_shouldReturnCreated_whenAdmin() throws Exception {
 
-        mockMvc.perform(post("/anime")
+        mockMvc.perform(post("/api/v1/anime")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + adminToken)
                         .content(validAnimeJson()))
@@ -185,7 +185,7 @@ public class AnimeControllerTest {
 
     @Test
     void create_shouldReturnForbidden_whenUser() throws Exception {
-        mockMvc.perform(post("/anime")
+        mockMvc.perform(post("/api/v1/anime")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + userToken)
                         .content(validAnimeJson()))
@@ -194,7 +194,7 @@ public class AnimeControllerTest {
 
     @Test
     void create_shouldReturnUnauthorized_whenNoToken() throws Exception {
-        mockMvc.perform(post("/anime")
+        mockMvc.perform(post("/api/v1/anime")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validAnimeJson()))
                 .andExpect(status().isUnauthorized());
@@ -202,7 +202,7 @@ public class AnimeControllerTest {
 
     @Test
     void create_shouldReturnBadRequest_whenInvalidData() throws Exception {
-        mockMvc.perform(post("/anime")
+        mockMvc.perform(post("/api/v1/anime")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + adminToken)
                         .content(invalidAnimeJson()))
@@ -211,9 +211,25 @@ public class AnimeControllerTest {
     }
 
     @Test
+    void create_shouldReturnConflict_whenDuplicateTitle() throws Exception {
+        mockMvc.perform(post("/api/v1/anime")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + adminToken)
+                        .content(validAnimeJson()))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/v1/anime")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + adminToken)
+                        .content(validAnimeJson()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errorCode").value("ANIME_ALREADY_EXISTS"));
+    }
+
+    @Test
     void getAll_shouldReturnPageOfAnime_whenPublic() throws Exception {
 
-        mockMvc.perform(get("/anime")
+        mockMvc.perform(get("/api/v1/anime")
                         .param("page", "0")
                         .param("size", "10"))
                 .andExpect(status().isOk())
@@ -223,7 +239,7 @@ public class AnimeControllerTest {
 
     @Test
     void getById_shouldReturnAnime_whenExists() throws Exception {
-        mockMvc.perform(get("/anime/{id}", testAnime1.getId()))
+        mockMvc.perform(get("/api/v1/anime/{id}", testAnime1.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(testAnime1.getId()))
                 .andExpect(jsonPath("$.titleRomaji").value("Naruto"));
@@ -231,14 +247,14 @@ public class AnimeControllerTest {
 
     @Test
     void getById_shouldReturn404_whenNotFound() throws Exception {
-        mockMvc.perform(get("/anime/99"))
+        mockMvc.perform(get("/api/v1/anime/99"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errorCode").value("ANIME_NOT_FOUND"));
     }
 
     @Test
     void update_anime_shouldReturnOk_whenAdmin() throws Exception {
-        mockMvc.perform(put("/anime/{id}", testAnime1.getId())
+        mockMvc.perform(put("/api/v1/anime/{id}", testAnime1.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + adminToken)
                         .content(updateAnimeJson()))
@@ -253,7 +269,7 @@ public class AnimeControllerTest {
 
     @Test
     void update_anime_shouldReturnForbidden_whenUser() throws Exception {
-        mockMvc.perform(put("/anime/{id}", testAnime1.getId())
+        mockMvc.perform(put("/api/v1/anime/{id}", testAnime1.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + userToken)
                         .content(updateAnimeJson()))
@@ -263,7 +279,7 @@ public class AnimeControllerTest {
 
     @Test
     void update_anime_shouldReturn404_whenNotFound() throws Exception {
-        mockMvc.perform(put("/anime/99")
+        mockMvc.perform(put("/api/v1/anime/99")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + adminToken)
                         .content(updateAnimeJson()))
@@ -273,7 +289,7 @@ public class AnimeControllerTest {
 
     @Test
     void delete_shouldReturnNoContent_whenAdmin() throws Exception {
-        mockMvc.perform(delete("/anime/{id}", testAnime1.getId())
+        mockMvc.perform(delete("/api/v1/anime/{id}", testAnime1.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isNoContent());
@@ -281,7 +297,7 @@ public class AnimeControllerTest {
 
     @Test
     void delete_shouldReturnForbidden_whenUser() throws Exception {
-        mockMvc.perform(delete("/anime/{id}", testAnime1.getId())
+        mockMvc.perform(delete("/api/v1/anime/{id}", testAnime1.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + userToken))
                 .andExpect(status().isForbidden())
@@ -290,7 +306,7 @@ public class AnimeControllerTest {
 
     @Test
     void delete_shouldReturnNotFound_whenNotExists() throws Exception {
-        mockMvc.perform(delete("/anime/99")
+        mockMvc.perform(delete("/api/v1/anime/99")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isNotFound())
@@ -299,14 +315,14 @@ public class AnimeControllerTest {
 
     @Test
     void delete_shouldReturnUnauthorized_whenNoToken() throws Exception {
-        mockMvc.perform(delete("/anime/{id}", testAnime1.getId())
+        mockMvc.perform(delete("/api/v1/anime/{id}", testAnime1.getId())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void getAll_shouldFilterBySearch() throws Exception {
-        mockMvc.perform(get("/anime")
+        mockMvc.perform(get("/api/v1/anime")
                         .param("search", "Titan")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -316,7 +332,7 @@ public class AnimeControllerTest {
 
     @Test
     void getAll_shouldFilterByType() throws Exception {
-        mockMvc.perform(get("/anime")
+        mockMvc.perform(get("/api/v1/anime")
                         .param("type", "MOVIE")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -326,7 +342,7 @@ public class AnimeControllerTest {
 
     @Test
     void getAll_shouldFilterByStatus() throws Exception {
-        mockMvc.perform(get("/anime")
+        mockMvc.perform(get("/api/v1/anime")
                         .param("status", "FINISHED")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -337,12 +353,31 @@ public class AnimeControllerTest {
 
     @Test
     void getAll_shouldFilterByCombination() throws Exception {
-        mockMvc.perform(get("/anime")
+        mockMvc.perform(get("/api/v1/anime")
                         .param("type", "TV")
                         .param("status", "ONGOING")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(1))
                 .andExpect(jsonPath("$.content[0].titleRomaji").value("Mushoku Tensei"));
+    }
+
+    @Test
+    void update_shouldReturnConflict_whenDuplicateTitle() throws Exception {
+        String updateJson = """
+            {
+                "titleRomaji": "Naruto",
+                "type": "TV",
+                "episodeCount": 1,
+                "status": "FINISHED"
+            }
+            """;
+
+        mockMvc.perform(put("/api/v1/anime/{id}", testAnime2.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + adminToken)
+                        .content(updateJson))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errorCode").value("ANIME_ALREADY_EXISTS"));
     }
 }

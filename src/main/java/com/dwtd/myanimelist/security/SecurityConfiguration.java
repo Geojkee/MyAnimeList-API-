@@ -40,10 +40,10 @@ public class SecurityConfiguration {
                     return corsConfiguration;
                 }))
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers("/auth/sign-up", "/auth/sign-in", "/auth/refresh").permitAll()
-                        .requestMatchers("/auth/logout" ).authenticated()
+                        .requestMatchers("/api/v1/auth/sign-up", "/api/v1/auth/sign-in", "/api/v1/auth/refresh").permitAll()
+                        .requestMatchers("/api/v1/auth/logout" ).authenticated()
                         .requestMatchers("/swagger-ui/**", "/swagger-resource/*", "/v3/api-docs/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/anime", "/anime/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/anime", "/api/v1/anime/*").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
