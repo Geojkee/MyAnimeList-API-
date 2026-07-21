@@ -5,8 +5,9 @@ import com.dwtd.myanimelist.features.anime.enums.AnimeType;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
 
-
+@Builder
 public record AnimeRequest(
         @NotBlank(message = "Title (romaji) is required")
         String titleRomaji,

@@ -288,6 +288,25 @@ public class AnimeControllerTest {
     }
 
     @Test
+    void update_shouldReturnConflict_whenDuplicateTitle() throws Exception {
+        String updateJson = """
+            {
+                "titleRomaji": "Naruto",
+                "type": "TV",
+                "episodeCount": 1,
+                "status": "FINISHED"
+            }
+            """;
+
+        mockMvc.perform(put("/api/v1/anime/{id}", testAnime2.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + adminToken)
+                        .content(updateJson))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errorCode").value("ANIME_ALREADY_EXISTS"));
+    }
+
+    @Test
     void delete_shouldReturnNoContent_whenAdmin() throws Exception {
         mockMvc.perform(delete("/api/v1/anime/{id}", testAnime1.getId())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -360,24 +379,5 @@ public class AnimeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(1))
                 .andExpect(jsonPath("$.content[0].titleRomaji").value("Mushoku Tensei"));
-    }
-
-    @Test
-    void update_shouldReturnConflict_whenDuplicateTitle() throws Exception {
-        String updateJson = """
-            {
-                "titleRomaji": "Naruto",
-                "type": "TV",
-                "episodeCount": 1,
-                "status": "FINISHED"
-            }
-            """;
-
-        mockMvc.perform(put("/api/v1/anime/{id}", testAnime2.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + adminToken)
-                        .content(updateJson))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.errorCode").value("ANIME_ALREADY_EXISTS"));
     }
 }
