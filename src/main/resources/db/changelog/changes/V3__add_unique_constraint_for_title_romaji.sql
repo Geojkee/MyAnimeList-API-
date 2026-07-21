@@ -1,0 +1,1 @@
+ALTER TABLE anime ADD CONSTRAINT uk_anime_title_romaji UNIQUE (title_romaji);
