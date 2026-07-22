@@ -2,6 +2,7 @@ package com.dwtd.myanimelist.features.anime.entity;
 
 import com.dwtd.myanimelist.features.anime.enums.AnimeStatus;
 import com.dwtd.myanimelist.features.anime.enums.AnimeType;
+import com.dwtd.myanimelist.features.genre.entity.Genre;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -10,6 +11,8 @@ import lombok.*;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "anime")
@@ -59,4 +62,12 @@ public class Anime {
     @UpdateTimestamp
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "UTC")
     private Instant updatedAt = Instant.now();
+
+    @ManyToMany
+    @JoinTable(
+            name = "anime_genre",
+            joinColumns = @JoinColumn(name = "anime_id"),
+            inverseJoinColumns = @JoinColumn(name = "genre_id")
+    )
+    private Set<Genre> genres = new HashSet<>();
 }
