@@ -25,3 +25,12 @@ databaseChangeLog:
         relativeToChangeFile: true
         splitStatements: true
         endDelimiter: ;
+
+  - changeSet:
+      id: V4__create_genre_table.sql
+      author: George (generated)
+      sqlFile:
+        path: db/changelog/changes/V4__create_genre_table.sql
+        relativeToChangeFile: true
+        splitStatements: true
+        endDelimiter: ;
