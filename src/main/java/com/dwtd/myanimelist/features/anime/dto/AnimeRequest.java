@@ -19,7 +19,7 @@ public record AnimeRequest(
         @NotNull(message = "Type is required")
         AnimeType type,
 
-        @NotNull(message = "genre is required")
+        @NotNull(message = "Genre is required")
         Set<Long> genreIds,
 
         @Min(value = 0, message = "Episode count must be at least 0")

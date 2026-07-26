@@ -137,7 +137,7 @@ class AnimeServiceTest {
 
         assertThatThrownBy(() -> animeService.create(testRequest))
                 .isInstanceOf(AnimeExistsException.class)
-                .hasMessageContaining("Anime with title 'Naruto' already exists");
+                .hasMessageContaining("Anime with title Naruto already exists");
         verify(animeRepository, never()).save(any());
     }
 
@@ -203,7 +203,7 @@ class AnimeServiceTest {
 
         assertThatThrownBy(() -> animeService.update(id, testRequest))
                 .isInstanceOf(AnimeExistsException.class)
-                .hasMessageContaining("Anime with title 'Naruto' already exists");
+                .hasMessageContaining("Anime with title Naruto already exists");
         verify(animeRepository, never()).save(any());
     }
 
