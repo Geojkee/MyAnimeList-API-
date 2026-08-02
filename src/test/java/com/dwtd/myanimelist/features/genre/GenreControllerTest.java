@@ -299,4 +299,21 @@ public class GenreControllerTest {
                 .andExpect(jsonPath("$[1].name").value("Comedy"))
                 .andExpect(jsonPath("$[2].name").value("Romance"));
     }
+
+    @Test
+    void getById_shouldReturnGenre_whenExists() throws Exception {
+        mockMvc.perform(get("/api/v1/genre/{id}", comedyGenreId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.name").value("Comedy"));
+    }
+
+    @Test
+    void getById_shouldReturnNotFound_whenNotExists() throws Exception {
+        mockMvc.perform(get("/api/v1/genre/999")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.errorCode").value("GENRE_NOT_FOUND"));
+    }
 }
