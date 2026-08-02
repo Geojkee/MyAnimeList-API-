@@ -5,7 +5,7 @@ import org.springframework.http.HttpStatus;
 
 public class GenreExistsException extends CustomException {
     public GenreExistsException(String name) {
-        super("Genre with name: " + name + "already exists",
+        super("Genre with name: " + name + " already exists",
                 HttpStatus.CONFLICT, "GENRE_ALREADY_EXISTS");
     }
 }

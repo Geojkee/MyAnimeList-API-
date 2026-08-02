@@ -2,7 +2,9 @@ package com.dwtd.myanimelist.features.genre.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.Builder;
 
+@Builder
 public record GenreRequest(
 
         @NotBlank(message = "Genre name is required")
