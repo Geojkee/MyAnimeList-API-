@@ -1,10 +1,12 @@
 package com.dwtd.myanimelist.security;
 
+import com.dwtd.myanimelist.exception.ErrorResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -17,7 +19,9 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
+import tools.jackson.databind.ObjectMapper;
 
+import java.time.Instant;
 import java.util.List;
 
 @Configuration
@@ -44,6 +48,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/v1/auth/logout" ).authenticated()
                         .requestMatchers("/swagger-ui/**", "/swagger-resource/*", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/anime", "/api/v1/anime/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/genre", "/api/v1/genre/*").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
@@ -57,7 +62,17 @@ public class SecurityConfiguration {
         return (request, response, authException) -> {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-            response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"Authentication required\"}");
+
+            ErrorResponse errorResponse = ErrorResponse.builder()
+                    .timestamp(Instant.now())
+                    .status(HttpStatus.UNAUTHORIZED.value())
+                    .error(HttpStatus.UNAUTHORIZED.getReasonPhrase())
+                    .message("Authentication required")
+                    .path(request.getRequestURI())
+                    .errorCode("UNAUTHORIZED")
+                    .build();
+
+            response.getWriter().write(new ObjectMapper().writeValueAsString(errorResponse));
         };
     }
 
