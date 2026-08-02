@@ -9,6 +9,8 @@ import com.dwtd.myanimelist.features.auth.entity.User;
 import com.dwtd.myanimelist.features.auth.enums.Role;
 import com.dwtd.myanimelist.features.auth.repository.RefreshTokenRepository;
 import com.dwtd.myanimelist.features.auth.repository.UserRepository;
+import com.dwtd.myanimelist.features.genre.entity.Genre;
+import com.dwtd.myanimelist.features.genre.repository.GenreRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,11 +64,18 @@ public class AnimeControllerTest {
     private Anime testAnime3;
     private Anime testAnime4;
 
+    @Autowired
+    private GenreRepository genreRepository;
+    private Long romanceGenreId;
+    private Long adventureGenreId;
+    private Long comedyGenreId;
+
     @BeforeEach
     void setUp() throws Exception {
         refreshTokenRepository.deleteAll();
         animeRepository.deleteAll();
         userRepository.deleteAll();
+        genreRepository.deleteAll();
 
         User admin = User.builder()
                 .username(ADMIN_USERNAME)
@@ -118,6 +127,13 @@ public class AnimeControllerTest {
                 .status(AnimeStatus.ONGOING)
                 .build();
         animeRepository.save(testAnime4);
+
+        Genre romance = genreRepository.save(Genre.builder().name("romance").build());
+        Genre adventure = genreRepository.save(Genre.builder().name("adventure").build());
+        Genre comedy = genreRepository.save(Genre.builder().name("comedy").build());
+        romanceGenreId = romance.getId();
+        adventureGenreId = adventure.getId();
+        comedyGenreId = comedy.getId();
     }
 
     private String validAnimeJson() {
@@ -128,9 +144,10 @@ public class AnimeControllerTest {
                     "type": "TV",
                     "episodeCount": 12,
                     "status": "FINISHED",
-                    "synopsis": "Test synopsis"
+                    "synopsis": "Test synopsis",
+                    "genreIds": [%d, %d, %d]
                 }
-                """;
+                """.formatted(romanceGenreId, adventureGenreId, comedyGenreId);
     }
 
     private String invalidAnimeJson() {
@@ -139,9 +156,10 @@ public class AnimeControllerTest {
                     "titleRomaji": "",
                     "type": "TV",
                     "episodeCount": -5,
-                    "status": "FINISHED"
+                    "status": "FINISHED",
+                    "genreIds": [%d, %d, %d]
                 }
-                """;
+                """.formatted(romanceGenreId, adventureGenreId, comedyGenreId);
     }
 
     private String updateAnimeJson() {
@@ -152,9 +170,10 @@ public class AnimeControllerTest {
                     "type": "TV",
                     "episodeCount": 221,
                     "status": "FINISHED",
-                    "synopsis": "Naruto synopsis (update)"
+                    "synopsis": "Naruto synopsis (update)",
+                    "genreIds": [%d, %d, %d]
                 }
-                """;
+                """.formatted(romanceGenreId, adventureGenreId, comedyGenreId);
     }
 
     private String loginAndGetToken(String username, String password) throws Exception {
@@ -216,7 +235,7 @@ public class AnimeControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + adminToken)
                         .content(validAnimeJson()))
-                .andExpect(status().isCreated());
+                    .andExpect(status().isCreated());
 
         mockMvc.perform(post("/api/v1/anime")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -294,7 +313,8 @@ public class AnimeControllerTest {
                 "titleRomaji": "Naruto",
                 "type": "TV",
                 "episodeCount": 1,
-                "status": "FINISHED"
+                "status": "FINISHED",
+                "genreIds": [1, 2, 3]
             }
             """;
 

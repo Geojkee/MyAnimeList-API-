@@ -1,7 +1,8 @@
 package com.dwtd.myanimelist.features.anime;
 
-import com.dwtd.myanimelist.features.anime.dto.AnimeRequest;
+import com.dwtd.myanimelist.features.anime.dto.CreateAnimeRequest;
 import com.dwtd.myanimelist.features.anime.dto.AnimeResponse;
+import com.dwtd.myanimelist.features.anime.dto.UpdateAnimeRequest;
 import com.dwtd.myanimelist.features.anime.entity.Anime;
 import com.dwtd.myanimelist.features.anime.service.AnimeService;
 import com.dwtd.myanimelist.features.anime.specification.AnimeSpecification;
@@ -30,7 +31,7 @@ public class AnimeController {
     @Operation(summary = "Create anime")
     @PostMapping
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<AnimeResponse> create(@RequestBody @Valid AnimeRequest request) {
+    public ResponseEntity<AnimeResponse> create(@RequestBody @Valid CreateAnimeRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(animeService.create(request));
     }
 
@@ -40,9 +41,10 @@ public class AnimeController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) Long genreId,
             @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.ASC) Pageable pageable
     ){
-        Specification<Anime> spec = AnimeSpecification.filterBy(search, type, status);
+        Specification<Anime> spec = AnimeSpecification.filterBy(search, type, status, genreId);
         Page<AnimeResponse> page = animeService.findAll(spec, pageable);
 
         return ResponseEntity.status(HttpStatus.OK).body(page);
@@ -57,7 +59,7 @@ public class AnimeController {
     @Operation(summary = "Update anime by id")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<AnimeResponse> update(@PathVariable Long id, @RequestBody @Valid AnimeRequest request) {
+    public ResponseEntity<AnimeResponse> update(@PathVariable Long id, @RequestBody @Valid UpdateAnimeRequest request) {
         return ResponseEntity.ok(animeService.update(id, request));
     }
 
