@@ -34,3 +34,12 @@ databaseChangeLog:
         relativeToChangeFile: true
         splitStatements: true
         endDelimiter: ;
+
+  - changeSet:
+      id: V5__create_user_anime_list_table.sql
+      author: George (generated)
+      sqlFile:
+        path: db/changelog/changes/V5__create_user_anime_list_table.sql
+        relativeToChangeFile: true
+        splitStatements: true
+        endDelimiter: ;
