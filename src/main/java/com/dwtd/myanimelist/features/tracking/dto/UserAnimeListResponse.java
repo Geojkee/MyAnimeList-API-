@@ -14,6 +14,5 @@ public record UserAnimeListResponse(
         Integer score,
         Integer watchedEpisodes,
         Integer totalEpisodes,
-        String synopsis,
-        String imageUrl
+        String synopsis
 ) {}

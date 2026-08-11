@@ -8,9 +8,9 @@ public record UserAnimeListSummary(
         Long animeId,
         String titleRomaji,
         String titleEnglish,
-        String imageUrl,
         UserAnimeStatus status,
         Integer score,
         Integer watchedEpisodes,
         Integer totalEpisodes
-) {}
+) {
+}

@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
@@ -40,15 +41,15 @@ public class UserAnimeList {
     @Column(name = "watched_episodes", nullable = false)
     private Integer watchedEpisodes = 0;
 
+    @CreationTimestamp
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "UTC")
     @Column(name = "created_at", updatable = false)
-    @Builder.Default
     private Instant createdAt = Instant.now();
 
     @UpdateTimestamp
     @Column(name = "updated_at")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "UTC")
-    private Instant updatedAt = Instant.now();
+    private Instant updatedAt;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)

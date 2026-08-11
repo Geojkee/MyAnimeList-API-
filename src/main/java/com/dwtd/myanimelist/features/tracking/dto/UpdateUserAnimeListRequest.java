@@ -3,14 +3,9 @@ package com.dwtd.myanimelist.features.tracking.dto;
 import com.dwtd.myanimelist.features.tracking.enums.UserAnimeStatus;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
 
-public record UserAnimeListRequest(
+public record UpdateUserAnimeListRequest(
 
-        @NotNull(message = "Anime ID is required")
-        Long animeId,
-
-        @NotNull(message = "Status is required")
         UserAnimeStatus status,
 
         @Min(value = 1, message = "Score must be between 1 and 10")
