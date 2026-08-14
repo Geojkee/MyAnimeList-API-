@@ -49,6 +49,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/swagger-ui/**", "/swagger-resource/*", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/anime", "/api/v1/anime/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/genre", "/api/v1/genre/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/{username}/animelist").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
