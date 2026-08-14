@@ -7,8 +7,10 @@ import com.dwtd.myanimelist.features.auth.repository.RefreshTokenRepository;
 import com.dwtd.myanimelist.features.auth.repository.UserRepository;
 import com.dwtd.myanimelist.features.genre.entity.Genre;
 import com.dwtd.myanimelist.features.genre.repository.GenreRepository;
+import com.dwtd.myanimelist.features.tracking.repository.UserAnimeListRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -43,6 +45,9 @@ public class GenreControllerTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private UserAnimeListRepository userAnimeListRepository;
+
     private final String ADMIN_USERNAME = "Admin";
     private final String ADMIN_EMAIL = "admin@example.com";
     private final String ADMIN_PASSWORD = "AdminPassword";
@@ -63,6 +68,7 @@ public class GenreControllerTest {
     @BeforeEach
     void setUp() throws Exception {
         refreshTokenRepository.deleteAll();
+        userAnimeListRepository.deleteAll();
         userRepository.deleteAll();
         genreRepository.deleteAll();
 

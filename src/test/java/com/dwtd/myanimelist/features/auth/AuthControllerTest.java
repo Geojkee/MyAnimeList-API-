@@ -1,12 +1,15 @@
 package com.dwtd.myanimelist.features.auth;
 
+import com.dwtd.myanimelist.features.anime.repository.AnimeRepository;
 import com.dwtd.myanimelist.features.auth.dto.LoginRequest;
 import com.dwtd.myanimelist.features.auth.dto.RegisterRequest;
 import com.dwtd.myanimelist.features.auth.entity.User;
 import com.dwtd.myanimelist.features.auth.repository.RefreshTokenRepository;
 import com.dwtd.myanimelist.features.auth.repository.UserRepository;
+import com.dwtd.myanimelist.features.tracking.repository.UserAnimeListRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -40,6 +43,12 @@ public class AuthControllerTest {
     @Autowired
     private RefreshTokenRepository refreshTokenRepository;
 
+    @Autowired
+    private UserAnimeListRepository userAnimeListRepository;
+
+    @Autowired
+    private AnimeRepository animeRepository;
+
     private final String USERNAME = "TestUser";
     private final String EMAIL = "test@example.com";
     private final String PASSWORD = "Password123";
@@ -47,6 +56,8 @@ public class AuthControllerTest {
     @BeforeEach
     void setUp() {
         refreshTokenRepository.deleteAll();
+        userAnimeListRepository.deleteAll();
+        animeRepository.deleteAll();
         userRepository.deleteAll();
     }
 
