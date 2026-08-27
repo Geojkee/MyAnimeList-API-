@@ -43,3 +43,12 @@ databaseChangeLog:
         relativeToChangeFile: true
         splitStatements: true
         endDelimiter: ;
+
+  - changeSet:
+      id: V6__create_comments_table.sql
+      author: George (generated)
+      sqlFile:
+        path: db/changelog/changes/V6__create_comments_table.sql
+        relativeToChangeFile: true
+        splitStatements: true
+        endDelimiter: ;
