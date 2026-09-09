@@ -9,6 +9,8 @@ import com.dwtd.myanimelist.features.auth.entity.User;
 import com.dwtd.myanimelist.features.auth.enums.Role;
 import com.dwtd.myanimelist.features.auth.repository.RefreshTokenRepository;
 import com.dwtd.myanimelist.features.auth.repository.UserRepository;
+import com.dwtd.myanimelist.features.comment.entity.Comment;
+import com.dwtd.myanimelist.features.comment.repository.CommentRepository;
 import com.dwtd.myanimelist.features.genre.entity.Genre;
 import com.dwtd.myanimelist.features.genre.repository.GenreRepository;
 import com.dwtd.myanimelist.features.tracking.repository.UserAnimeListRepository;
@@ -53,6 +55,9 @@ public class AnimeControllerTest {
     @Autowired
     private UserAnimeListRepository userAnimeListRepository;
 
+    @Autowired
+    private CommentRepository commentRepository;
+
     private final String ADMIN_USERNAME = "Admin";
     private final String ADMIN_EMAIL = "admin@example.com";
     private final String ADMIN_PASSWORD = "AdminPassword";
@@ -76,6 +81,7 @@ public class AnimeControllerTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        commentRepository.deleteAll();
         refreshTokenRepository.deleteAll();
         userAnimeListRepository.deleteAll();
         animeRepository.deleteAll();

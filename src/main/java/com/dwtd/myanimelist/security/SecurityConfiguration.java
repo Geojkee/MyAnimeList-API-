@@ -50,6 +50,7 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.GET, "/api/v1/anime", "/api/v1/anime/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/genre", "/api/v1/genre/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/users/{username}/animelist").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/anime/{animeId}/comments").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
