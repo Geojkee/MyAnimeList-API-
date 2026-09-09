@@ -6,6 +6,7 @@ import com.dwtd.myanimelist.features.auth.dto.RegisterRequest;
 import com.dwtd.myanimelist.features.auth.entity.User;
 import com.dwtd.myanimelist.features.auth.repository.RefreshTokenRepository;
 import com.dwtd.myanimelist.features.auth.repository.UserRepository;
+import com.dwtd.myanimelist.features.comment.repository.CommentRepository;
 import com.dwtd.myanimelist.features.tracking.repository.UserAnimeListRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,6 +48,9 @@ public class AuthControllerTest {
     private UserAnimeListRepository userAnimeListRepository;
 
     @Autowired
+    private CommentRepository commentRepository;
+
+    @Autowired
     private AnimeRepository animeRepository;
 
     private final String USERNAME = "TestUser";
@@ -55,6 +59,7 @@ public class AuthControllerTest {
 
     @BeforeEach
     void setUp() {
+        commentRepository.deleteAll();
         refreshTokenRepository.deleteAll();
         userAnimeListRepository.deleteAll();
         animeRepository.deleteAll();
