@@ -20,8 +20,17 @@ CREATE TABLE friendlist
             REFERENCES users (id)
             ON DELETE CASCADE,
 
-    CONSTRAINT chk_user_not_equal_friend CHECK (user_id != friend_id),
-    CONSTRAINT uk_friendlist_user_friend UNIQUE (user_id, friend_id)
+    CONSTRAINT chk_user_not_equal_friend
+        CHECK (user_id != friend_id),
+
+    CONSTRAINT uk_friendlist_user_friend
+        UNIQUE (user_id, friend_id),
+
+    CONSTRAINT unique_user_friend
+        UNIQUE (user_id, friend_id),
+
+    CONSTRAINT chk_friend_status
+        CHECK (status IN ('PENDING', 'ACCEPTED', 'REJECTED', 'BLOCKED'))
 );
 
 CREATE INDEX idx_friendships_user_id ON friendlist (user_id);
