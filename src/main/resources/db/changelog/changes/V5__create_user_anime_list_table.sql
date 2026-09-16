@@ -1,4 +1,4 @@
-CREATE TABLE user_anime_list
+CREATE TABLE IF NOT EXISTS user_anime_list
 (
     id               BIGSERIAL PRIMARY KEY,
 

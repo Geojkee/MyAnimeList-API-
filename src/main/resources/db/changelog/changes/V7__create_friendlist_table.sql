@@ -1,4 +1,4 @@
-CREATE TABLE friendlist
+CREATE TABLE IF NOT EXISTS friendlist
 (
     id         BIGSERIAL PRIMARY KEY,
 

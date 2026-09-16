@@ -1,11 +1,11 @@
-CREATE TABLE genres
+CREATE TABLE IF NOT EXISTS genres
 (
     id   BIGSERIAL PRIMARY KEY,
 
     name VARCHAR(50) NOT NULL UNIQUE
 );
 
-CREATE TABLE anime_genre
+CREATE TABLE IF NOT EXISTS anime_genre
 (
     anime_id BIGINT NOT NULL,
     genre_id BIGINT NOT NULL,

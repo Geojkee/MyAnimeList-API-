@@ -1,4 +1,4 @@
-CREATE TABLE users
+CREATE TABLE IF NOT EXISTS users
 (
     id            BIGSERIAL PRIMARY KEY,
 
@@ -12,7 +12,7 @@ CREATE TABLE users
     updated_at    TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE anime
+CREATE TABLE IF NOT EXISTS anime
 (
     id            BIGSERIAL PRIMARY KEY,
 
@@ -32,7 +32,7 @@ CREATE TABLE anime
     updated_at    TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE user_anime_list
+CREATE TABLE IF NOT EXISTS user_anime_list
 (
     id               BIGSERIAL PRIMARY KEY,
 
