@@ -52,3 +52,12 @@ databaseChangeLog:
         relativeToChangeFile: true
         splitStatements: true
         endDelimiter: ;
+
+  - changeSet:
+      id: V7__create_friendlist_table.sql
+      author: George (generated)
+      sqlFile:
+        path: db/changelog/changes/V7__create_friendlist_table.sql
+        relativeToChangeFile: true
+        splitStatements: true
+        endDelimiter: ;

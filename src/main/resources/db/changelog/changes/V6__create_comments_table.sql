@@ -1,4 +1,4 @@
-CREATE TABLE comments
+CREATE TABLE IF NOT EXISTS comments
 (
     id         BIGSERIAL PRIMARY KEY,
 

@@ -10,6 +10,7 @@ import com.dwtd.myanimelist.features.auth.enums.Role;
 import com.dwtd.myanimelist.features.auth.repository.RefreshTokenRepository;
 import com.dwtd.myanimelist.features.auth.repository.UserRepository;
 import com.dwtd.myanimelist.features.comment.repository.CommentRepository;
+import com.dwtd.myanimelist.features.friendlist.repository.FriendListRepository;
 import com.dwtd.myanimelist.features.tracking.dto.AddUserAnimeListRequest;
 import com.dwtd.myanimelist.features.tracking.dto.UpdateUserAnimeListRequest;
 import com.dwtd.myanimelist.features.tracking.entity.UserAnimeList;
@@ -62,6 +63,9 @@ public class UserAnimeListControllerTest {
     @Autowired
     private CommentRepository commentRepository;
 
+    @Autowired
+    private FriendListRepository friendListRepository;
+
     private final String USERNAME = "TestUser";
     private final String PASSWORD = "Password123";
     private final String EMAIL = "test@example.com";
@@ -69,8 +73,10 @@ public class UserAnimeListControllerTest {
     private String userToken;
     private Anime testAnime;
 
+
     @BeforeEach
     void setUp() throws Exception {
+        friendListRepository.deleteAll();
         commentRepository.deleteAll();
         refreshTokenRepository.deleteAll();
         userAnimeListRepository.deleteAll();

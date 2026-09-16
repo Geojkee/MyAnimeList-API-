@@ -11,6 +11,7 @@ import com.dwtd.myanimelist.features.auth.repository.RefreshTokenRepository;
 import com.dwtd.myanimelist.features.auth.repository.UserRepository;
 import com.dwtd.myanimelist.features.comment.entity.Comment;
 import com.dwtd.myanimelist.features.comment.repository.CommentRepository;
+import com.dwtd.myanimelist.features.friendlist.repository.FriendListRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +54,9 @@ public class CommentControllerTest {
     @Autowired
     private AnimeRepository animeRepository;
 
+    @Autowired
+    private FriendListRepository friendListRepository;
+
     private final String ADMIN_USERNAME = "Admin";
     private final String ADMIN_EMAIL = "admin@example.com";
     private final String ADMIN_PASSWORD = "AdminPassword";
@@ -75,6 +79,7 @@ public class CommentControllerTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        friendListRepository.deleteAll();
         commentRepository.deleteAll();
         animeRepository.deleteAll();
         refreshTokenRepository.deleteAll();
