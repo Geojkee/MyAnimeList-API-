@@ -5,8 +5,12 @@ import com.dwtd.myanimelist.features.anime.enums.AnimeStatus;
 import com.dwtd.myanimelist.features.anime.enums.AnimeType;
 import com.dwtd.myanimelist.features.auth.entity.User;
 import com.dwtd.myanimelist.features.auth.enums.Role;
+import com.dwtd.myanimelist.features.comment.entity.Comment;
 import com.dwtd.myanimelist.features.friendlist.entity.FriendList;
 import com.dwtd.myanimelist.features.friendlist.enums.FriendListStatus;
+import com.dwtd.myanimelist.features.genre.entity.Genre;
+import com.dwtd.myanimelist.features.tracking.entity.UserAnimeList;
+import com.dwtd.myanimelist.features.tracking.enums.UserAnimeStatus;
 
 public final class TestDataFactory {
 
@@ -22,11 +26,27 @@ public final class TestDataFactory {
     }
 
     public static Anime anime(String title, int episodeCount) {
+        return anime(title, AnimeType.TV, episodeCount, AnimeStatus.FINISHED);
+    }
+
+    public static Anime anime(String title, AnimeType type, int episodeCount, AnimeStatus status) {
         return Anime.builder()
                 .titleRomaji(title)
-                .type(AnimeType.TV)
+                .type(type)
                 .episodeCount(episodeCount)
-                .status(AnimeStatus.FINISHED)
+                .status(status)
+                .build();
+    }
+
+    public static Genre genre(String name) {
+        return Genre.builder().name(name).build();
+    }
+
+    public static Comment comment(Anime anime, User user, String text) {
+        return Comment.builder()
+                .anime(anime)
+                .user(user)
+                .text(text)
                 .build();
     }
 
@@ -35,6 +55,22 @@ public final class TestDataFactory {
                 .user(user)
                 .friend(friend)
                 .status(status)
+                .build();
+    }
+
+    public static UserAnimeList userAnimeList(
+            User user,
+            Anime anime,
+            UserAnimeStatus status,
+            Integer score,
+            int watchedEpisodes
+    ) {
+        return UserAnimeList.builder()
+                .user(user)
+                .anime(anime)
+                .status(status)
+                .score(score)
+                .watchedEpisodes(watchedEpisodes)
                 .build();
     }
 }

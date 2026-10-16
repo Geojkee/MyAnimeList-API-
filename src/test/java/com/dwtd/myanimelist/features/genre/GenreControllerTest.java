@@ -1,125 +1,40 @@
 package com.dwtd.myanimelist.features.genre;
 
-import com.dwtd.myanimelist.features.auth.dto.LoginRequest;
-import com.dwtd.myanimelist.features.auth.entity.User;
 import com.dwtd.myanimelist.features.auth.enums.Role;
-import com.dwtd.myanimelist.features.auth.repository.RefreshTokenRepository;
-import com.dwtd.myanimelist.features.auth.repository.UserRepository;
-import com.dwtd.myanimelist.features.comment.repository.CommentRepository;
-import com.dwtd.myanimelist.features.friendlist.repository.FriendListRepository;
-import com.dwtd.myanimelist.features.genre.entity.Genre;
-import com.dwtd.myanimelist.features.genre.repository.GenreRepository;
-import com.dwtd.myanimelist.features.tracking.repository.UserAnimeListRepository;
+import com.dwtd.myanimelist.helpers.BaseIntegrationTest;
+import com.dwtd.myanimelist.helpers.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import tools.jackson.databind.ObjectMapper;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-public class GenreControllerTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private RefreshTokenRepository refreshTokenRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private UserAnimeListRepository userAnimeListRepository;
-
-    @Autowired
-    private CommentRepository commentRepository;
-
-    @Autowired
-    private FriendListRepository friendListRepository;
+public class GenreControllerTest extends BaseIntegrationTest {
 
     private final String ADMIN_USERNAME = "Admin";
-    private final String ADMIN_EMAIL = "admin@example.com";
     private final String ADMIN_PASSWORD = "AdminPassword";
-
     private final String USER_USERNAME = "User";
-    private final String USER_EMAIL = "user@example.com";
     private final String USER_PASSWORD = "UserPassword";
 
-    @Autowired
-    private GenreRepository genreRepository;
     private Long romanceGenreId;
     private Long adventureGenreId;
     private Long comedyGenreId;
-
     private String adminToken;
     private String userToken;
 
-
     @BeforeEach
     void setUp() throws Exception {
-        friendListRepository.deleteAll();
-        commentRepository.deleteAll();
-        refreshTokenRepository.deleteAll();
-        userAnimeListRepository.deleteAll();
-        userRepository.deleteAll();
-        genreRepository.deleteAll();
-
-        User admin = User.builder()
-                .username(ADMIN_USERNAME)
-                .email(ADMIN_EMAIL)
-                .password(passwordEncoder.encode(ADMIN_PASSWORD))
-                .role(Role.ROLE_ADMIN)
-                .build();
-        userRepository.save(admin);
-
-        User user = User.builder()
-                .username(USER_USERNAME)
-                .email(USER_EMAIL)
-                .password(passwordEncoder.encode(USER_PASSWORD))
-                .role(Role.ROLE_USER)
-                .build();
-        userRepository.save(user);
+        saveUser(ADMIN_USERNAME, "admin@example.com", ADMIN_PASSWORD, Role.ROLE_ADMIN);
+        saveUser(USER_USERNAME, "user@example.com", USER_PASSWORD, Role.ROLE_USER);
 
         adminToken = loginAndGetToken(ADMIN_USERNAME, ADMIN_PASSWORD);
         userToken = loginAndGetToken(USER_USERNAME, USER_PASSWORD);
 
-
-        Genre romance = genreRepository.save(Genre.builder().name("Romance").build());
-        romanceGenreId = romance.getId();
-        Genre adventure = genreRepository.save(Genre.builder().name("Adventure").build());
-        adventureGenreId = adventure.getId();
-        Genre comedy = genreRepository.save(Genre.builder().name("Comedy").build());
-        comedyGenreId = comedy.getId();
-    }
-
-    private String loginAndGetToken(String username, String password) throws Exception {
-        LoginRequest loginRequest = new LoginRequest(username, password);
-        MvcResult result = mockMvc.perform(post("/api/v1/auth/sign-in")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest)))
-                .andExpect(status().isOk())
-                .andReturn();
-        String json = result.getResponse().getContentAsString();
-        return objectMapper.readTree(json).get("token").asString();
+        romanceGenreId = genreRepository.save(TestDataFactory.genre("Romance")).getId();
+        adventureGenreId = genreRepository.save(TestDataFactory.genre("Adventure")).getId();
+        comedyGenreId = genreRepository.save(TestDataFactory.genre("Comedy")).getId();
     }
 
     private String validGenreJson() {
@@ -148,10 +63,9 @@ public class GenreControllerTest {
 
     @Test
     void create_genre_shouldReturnCreated_whenAdmin() throws Exception {
-
         mockMvc.perform(post("/api/v1/genre")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + adminToken)
+                        .header("Authorization", bearer(adminToken))
                         .content(validGenreJson()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
@@ -171,7 +85,7 @@ public class GenreControllerTest {
     void create_shouldReturnForbidden_whenUser() throws Exception {
         mockMvc.perform(post("/api/v1/genre")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + userToken)
+                        .header("Authorization", bearer(userToken))
                         .content(validGenreJson()))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.errorCode").value("ACCESS_DENIED"));
@@ -181,7 +95,7 @@ public class GenreControllerTest {
     void create_shouldReturnBadRequest_whenInvalidData() throws Exception {
         mockMvc.perform(post("/api/v1/genre")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + adminToken)
+                        .header("Authorization", bearer(adminToken))
                         .content(invalidGenreJson()))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorCode").value("VALIDATION_FAILED"));
@@ -191,15 +105,13 @@ public class GenreControllerTest {
     void create_shouldReturnConflict_whenDuplicateName() throws Exception {
         mockMvc.perform(post("/api/v1/genre")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + adminToken)
+                        .header("Authorization", bearer(adminToken))
                         .content(validGenreJson()))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").exists())
-                .andExpect(jsonPath("$.name").value("Test Genre"));
+                .andExpect(status().isCreated());
 
         mockMvc.perform(post("/api/v1/genre")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + adminToken)
+                        .header("Authorization", bearer(adminToken))
                         .content(validGenreJson()))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.errorCode").value("GENRE_ALREADY_EXISTS"));
@@ -209,7 +121,7 @@ public class GenreControllerTest {
     void update_shouldReturnOk_whenAdmin() throws Exception {
         mockMvc.perform(put("/api/v1/genre/{id}", romanceGenreId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + adminToken)
+                        .header("Authorization", bearer(adminToken))
                         .content(updateGenreJson()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").exists())
@@ -229,7 +141,7 @@ public class GenreControllerTest {
     void update_shouldReturnForbidden_whenUser() throws Exception {
         mockMvc.perform(put("/api/v1/genre/{id}", romanceGenreId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + userToken)
+                        .header("Authorization", bearer(userToken))
                         .content(updateGenreJson()))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.errorCode").value("ACCESS_DENIED"));
@@ -239,7 +151,7 @@ public class GenreControllerTest {
     void update_shouldReturnBadRequest_whenInvalidData() throws Exception {
         mockMvc.perform(put("/api/v1/genre/{id}", romanceGenreId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + adminToken)
+                        .header("Authorization", bearer(adminToken))
                         .content(invalidGenreJson()))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorCode").value("VALIDATION_FAILED"));
@@ -255,7 +167,7 @@ public class GenreControllerTest {
 
         mockMvc.perform(put("/api/v1/genre/{id}", adventureGenreId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + adminToken)
+                        .header("Authorization", bearer(adminToken))
                         .content(updateJson))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.errorCode").value("GENRE_ALREADY_EXISTS"));
@@ -263,9 +175,9 @@ public class GenreControllerTest {
 
     @Test
     void update_shouldReturnNotFound_whenGenreNotExists() throws Exception {
-        mockMvc.perform(put("/api/v1/genre/999")
+        mockMvc.perform(put("/api/v1/genre/999999")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + adminToken)
+                        .header("Authorization", bearer(adminToken))
                         .content(validGenreJson()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errorCode").value("GENRE_NOT_FOUND"));
@@ -275,7 +187,7 @@ public class GenreControllerTest {
     void delete_shouldReturnNoContent_whenAdmin() throws Exception {
         mockMvc.perform(delete("/api/v1/genre/{id}", romanceGenreId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + adminToken))
+                        .header("Authorization", bearer(adminToken)))
                 .andExpect(status().isNoContent());
     }
 
@@ -291,16 +203,16 @@ public class GenreControllerTest {
     void delete_shouldReturnForbidden_whenUser() throws Exception {
         mockMvc.perform(delete("/api/v1/genre/{id}", romanceGenreId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + userToken))
+                        .header("Authorization", bearer(userToken)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.errorCode").value("ACCESS_DENIED"));
     }
 
     @Test
     void delete_shouldReturnNotFound_whenGenreNotExists() throws Exception {
-        mockMvc.perform(delete("/api/v1/genre/999")
+        mockMvc.perform(delete("/api/v1/genre/999999")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + adminToken))
+                        .header("Authorization", bearer(adminToken)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errorCode").value("GENRE_NOT_FOUND"));
     }
@@ -328,7 +240,7 @@ public class GenreControllerTest {
 
     @Test
     void getById_shouldReturnNotFound_whenNotExists() throws Exception {
-        mockMvc.perform(get("/api/v1/genre/999")
+        mockMvc.perform(get("/api/v1/genre/999999")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errorCode").value("GENRE_NOT_FOUND"));

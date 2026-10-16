@@ -272,6 +272,34 @@ class UserAnimeListServiceTest {
     }
 
     @Test
+    void updateAnimeInList_shouldUpdateScoreOnly_whenStatusAndWatchedNotProvided() {
+        Long animeId = 1L;
+        UpdateUserAnimeListRequest request = new UpdateUserAnimeListRequest(null, 9, null);
+
+        UserAnimeList existing = UserAnimeList.builder()
+                .id(10L)
+                .user(testUser)
+                .anime(testAnime)
+                .status(UserAnimeStatus.WATCHING)
+                .score(8)
+                .watchedEpisodes(5)
+                .build();
+
+        when(userService.getCurrentUser()).thenReturn(testUser);
+        when(animeRepository.findById(animeId)).thenReturn(Optional.of(testAnime));
+        when(userAnimeListRepository.findByUserIdAndAnimeId(testUser.getId(), animeId))
+                .thenReturn(Optional.of(existing));
+        when(userAnimeListRepository.save(existing)).thenReturn(existing);
+
+        UserAnimeListResponse response = service.updateAnimeInList(animeId, request);
+
+        assertThat(response.status()).isEqualTo(UserAnimeStatus.WATCHING);
+        assertThat(response.score()).isEqualTo(9);
+        assertThat(response.watchedEpisodes()).isEqualTo(5);
+        verify(userAnimeListRepository).save(existing);
+    }
+
+    @Test
     void updateAnimeInList_shouldThrowInvalidUserAnimeDataException_whenWatchedExceedsTotal() {
         Long animeId = 1L;
         UpdateUserAnimeListRequest request = new UpdateUserAnimeListRequest(

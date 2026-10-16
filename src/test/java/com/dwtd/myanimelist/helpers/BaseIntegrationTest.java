@@ -2,6 +2,8 @@ package com.dwtd.myanimelist.helpers;
 
 import com.dwtd.myanimelist.features.anime.repository.AnimeRepository;
 import com.dwtd.myanimelist.features.auth.dto.LoginRequest;
+import com.dwtd.myanimelist.features.auth.entity.User;
+import com.dwtd.myanimelist.features.auth.enums.Role;
 import com.dwtd.myanimelist.features.auth.repository.RefreshTokenRepository;
 import com.dwtd.myanimelist.features.auth.repository.UserRepository;
 import com.dwtd.myanimelist.features.comment.repository.CommentRepository;
@@ -13,10 +15,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import tools.jackson.databind.ObjectMapper;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -30,25 +36,28 @@ public abstract class BaseIntegrationTest {
     protected ObjectMapper objectMapper;
 
     @Autowired
+    protected PasswordEncoder passwordEncoder;
+
+    @Autowired
     protected UserRepository userRepository;
 
     @Autowired
     protected RefreshTokenRepository refreshTokenRepository;
 
     @Autowired
-    private CommentRepository commentRepository;
+    protected CommentRepository commentRepository;
 
     @Autowired
-    private FriendListRepository friendListRepository;
+    protected FriendListRepository friendListRepository;
 
     @Autowired
-    private UserAnimeListRepository userAnimeListRepository;
+    protected UserAnimeListRepository userAnimeListRepository;
 
     @Autowired
-    private AnimeRepository animeRepository;
+    protected AnimeRepository animeRepository;
 
     @Autowired
-    private GenreRepository genreRepository;
+    protected GenreRepository genreRepository;
 
     @BeforeEach
     protected void baseSetUp() {
@@ -61,15 +70,28 @@ public abstract class BaseIntegrationTest {
         userRepository.deleteAll();
     }
 
+    protected User saveUser(String username, String email, String rawPassword, Role role) {
+        return userRepository.save(User.builder()
+                .username(username)
+                .email(email)
+                .password(passwordEncoder.encode(rawPassword))
+                .role(role)
+                .build());
+    }
+
     protected String loginAndGetToken(String username, String password) throws Exception {
         LoginRequest loginRequest = new LoginRequest(username, password);
         MvcResult result = mockMvc.perform(
-                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-                                .post("/api/v1/auth/sign-in")
+                        post("/api/v1/auth/sign-in")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(loginRequest)))
+                .andExpect(status().isOk())
                 .andReturn();
         String json = result.getResponse().getContentAsString();
         return objectMapper.readTree(json).get("token").asText();
+    }
+
+    protected String bearer(String token) {
+        return "Bearer " + token;
     }
 }

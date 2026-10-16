@@ -150,6 +150,28 @@ class AnimeServiceTest {
     }
 
     @Test
+    void create_shouldSaveWithoutGenres_whenGenreIdsEmpty() {
+        CreateAnimeRequest request = CreateAnimeRequest.builder()
+                .titleRomaji("No Genre")
+                .type(AnimeType.TV)
+                .episodeCount(1)
+                .status(AnimeStatus.FINISHED)
+                .genreIds(Set.of())
+                .build();
+        when(animeRepository.existsByTitleRomaji("No Genre")).thenReturn(false);
+        when(animeRepository.save(any(Anime.class))).thenAnswer(invocation -> {
+            Anime anime = invocation.getArgument(0);
+            anime.setId(5L);
+            return anime;
+        });
+
+        AnimeResponse response = animeService.create(request);
+
+        assertThat(response.genres()).isEmpty();
+        verify(genreRepository, never()).findAllById(any());
+    }
+
+    @Test
     void create_shouldThrowAnimeExistsException_whenDuplicateTitle() {
         when(animeRepository.existsByTitleRomaji("Naruto")).thenReturn(true);
 
@@ -249,6 +271,21 @@ class AnimeServiceTest {
         assertThat(captured.getTitleRomaji()).isEqualTo("Naruto Shippuden");
         assertThat(captured.getEpisodeCount()).isEqualTo(500);
         verify(animeRepository).findById(id);
+    }
+
+    @Test
+    void update_shouldKeepExistingFields_whenRequestFieldsAreNull() {
+        Long id = 1L;
+        UpdateAnimeRequest emptyUpdate = UpdateAnimeRequest.builder().build();
+        when(animeRepository.findById(id)).thenReturn(Optional.of(testAnime));
+        when(animeRepository.save(any(Anime.class))).thenReturn(testAnime);
+
+        AnimeResponse response = animeService.update(id, emptyUpdate);
+
+        assertThat(response.titleRomaji()).isEqualTo("Naruto");
+        assertThat(response.episodeCount()).isEqualTo(220);
+        verify(animeRepository, never()).existsByTitleRomajiAndIdNot(any(), any());
+        verify(genreRepository, never()).findAllById(any());
     }
 
     @Test

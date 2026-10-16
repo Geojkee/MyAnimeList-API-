@@ -132,6 +132,25 @@ class FriendListServiceTest {
     }
 
     @Test
+    void getFriends_shouldReturnOtherUser_whenCurrentUserIsFriend() {
+        FriendList reverseFriendship = FriendList.builder()
+                .id(12L)
+                .user(friendUser)
+                .friend(currentUser)
+                .status(FriendListStatus.ACCEPTED)
+                .createdAt(Instant.now())
+                .build();
+        when(userService.getCurrentUser()).thenReturn(currentUser);
+        when(friendListRepository.findAllFriendsByUserIdAndStatus(1L, FriendListStatus.ACCEPTED))
+                .thenReturn(List.of(reverseFriendship));
+
+        List<FriendResponse> result = friendListService.getFriends();
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).username()).isEqualTo("Bob");
+    }
+
+    @Test
     void getIncomingRequests_shouldReturnList() {
         when(userService.getCurrentUser()).thenReturn(friendUser);
         when(friendListRepository.findAllByFriendIdAndStatus(2L, FriendListStatus.PENDING))
@@ -232,6 +251,17 @@ class FriendListServiceTest {
     }
 
     @Test
+    void rejectFriendRequest_shouldThrowInvalidStatus_whenAlreadyRejected() {
+        pendingRequest.setStatus(FriendListStatus.REJECTED);
+        when(userService.getCurrentUser()).thenReturn(friendUser);
+        when(friendListRepository.findById(10L)).thenReturn(Optional.of(pendingRequest));
+
+        assertThatThrownBy(() -> friendListService.rejectFriendRequest(10L))
+                .isInstanceOf(InvalidFriendRequestStatusException.class);
+        verify(friendListRepository, never()).save(any());
+    }
+
+    @Test
     void cancelFriendRequest_shouldDelete_whenSender() {
         when(userService.getCurrentUser()).thenReturn(currentUser);
         when(friendListRepository.findById(10L)).thenReturn(Optional.of(pendingRequest));
@@ -257,6 +287,17 @@ class FriendListServiceTest {
 
         assertThatThrownBy(() -> friendListService.cancelFriendRequest(10L))
                 .isInstanceOf(FriendRequestAccessDeniedException.class);
+        verify(friendListRepository, never()).delete(any());
+    }
+
+    @Test
+    void cancelFriendRequest_shouldThrowInvalidStatus_whenAlreadyAccepted() {
+        pendingRequest.setStatus(FriendListStatus.ACCEPTED);
+        when(userService.getCurrentUser()).thenReturn(currentUser);
+        when(friendListRepository.findById(10L)).thenReturn(Optional.of(pendingRequest));
+
+        assertThatThrownBy(() -> friendListService.cancelFriendRequest(10L))
+                .isInstanceOf(InvalidFriendRequestStatusException.class);
         verify(friendListRepository, never()).delete(any());
     }
 

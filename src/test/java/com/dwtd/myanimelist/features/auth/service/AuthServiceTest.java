@@ -11,6 +11,7 @@ import com.dwtd.myanimelist.features.auth.entity.User;
 import com.dwtd.myanimelist.features.auth.enums.Role;
 import com.dwtd.myanimelist.security.JwtService;
 import jakarta.servlet.http.HttpServletResponse;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -18,6 +19,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -44,6 +46,13 @@ public class AuthServiceTest {
 
     @Mock
     private RefreshTokenService refreshTokenService;
+
+    @BeforeEach
+    void setUp() {
+        ReflectionTestUtils.setField(authService, "refreshCookiePath", "/api/v1/auth");
+        ReflectionTestUtils.setField(authService, "refreshTokenMaxAgeSeconds", 2592000L);
+        ReflectionTestUtils.setField(authService, "cookieSecure", false);
+    }
 
     @Test
     void signUp_ShouldRegisterUserAndReturnAuthResponse() {
@@ -198,6 +207,16 @@ public class AuthServiceTest {
         authService.logout(refreshTokenValue, response);
 
         verify(refreshTokenService).revokeToken(refreshTokenValue);
+        verify(response).addHeader(eq("Set-Cookie"), anyString());
+    }
+
+    @Test
+    void logout_ShouldClearCookie_WhenRefreshTokenMissing() {
+        HttpServletResponse response = mock(HttpServletResponse.class);
+
+        authService.logout(null, response);
+
+        verify(refreshTokenService, never()).revokeToken(any());
         verify(response).addHeader(eq("Set-Cookie"), anyString());
     }
 
