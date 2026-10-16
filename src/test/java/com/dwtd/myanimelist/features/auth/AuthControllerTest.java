@@ -1,88 +1,30 @@
 package com.dwtd.myanimelist.features.auth;
 
-import com.dwtd.myanimelist.features.anime.repository.AnimeRepository;
 import com.dwtd.myanimelist.features.auth.dto.LoginRequest;
 import com.dwtd.myanimelist.features.auth.dto.RegisterRequest;
-import com.dwtd.myanimelist.features.auth.entity.User;
-import com.dwtd.myanimelist.features.auth.repository.RefreshTokenRepository;
-import com.dwtd.myanimelist.features.auth.repository.UserRepository;
-import com.dwtd.myanimelist.features.comment.repository.CommentRepository;
-import com.dwtd.myanimelist.features.tracking.repository.UserAnimeListRepository;
-import org.junit.jupiter.api.BeforeEach;
+import com.dwtd.myanimelist.features.auth.enums.Role;
+import com.dwtd.myanimelist.helpers.BaseIntegrationTest;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import tools.jackson.databind.ObjectMapper;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-public class AuthControllerTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private RefreshTokenRepository refreshTokenRepository;
-
-    @Autowired
-    private UserAnimeListRepository userAnimeListRepository;
-
-    @Autowired
-    private CommentRepository commentRepository;
-
-    @Autowired
-    private AnimeRepository animeRepository;
+public class AuthControllerTest extends BaseIntegrationTest {
 
     private final String USERNAME = "TestUser";
     private final String EMAIL = "test@example.com";
     private final String PASSWORD = "Password123";
 
-    @BeforeEach
-    void setUp() {
-        commentRepository.deleteAll();
-        refreshTokenRepository.deleteAll();
-        userAnimeListRepository.deleteAll();
-        animeRepository.deleteAll();
-        userRepository.deleteAll();
-    }
-
     private void createUser() {
-        User user = User.builder()
-                .username(USERNAME)
-                .email(EMAIL)
-                .password(passwordEncoder.encode(PASSWORD))
-                .build();
-
-        userRepository.save(user);
+        saveUser(USERNAME, EMAIL, PASSWORD, Role.ROLE_USER);
     }
 
     @Test
     void signUp_ShouldReturnToken_WhenValidRequest() throws Exception {
-        RegisterRequest request = new RegisterRequest(
-                USERNAME,
-                EMAIL,
-                PASSWORD
-        );
+        RegisterRequest request = new RegisterRequest(USERNAME, EMAIL, PASSWORD);
 
         mockMvc.perform(post("/api/v1/auth/sign-up")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -96,11 +38,7 @@ public class AuthControllerTest {
 
     @Test
     void signUp_ShouldReturnBadRequest_WhenInvalidData() throws Exception {
-        RegisterRequest request = new RegisterRequest(
-                "",
-                "invalid-email",
-                "short"
-        );
+        RegisterRequest request = new RegisterRequest("", "invalid-email", "short");
 
         mockMvc.perform(post("/api/v1/auth/sign-up")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -113,11 +51,7 @@ public class AuthControllerTest {
     void signUp_ShouldReturnConflict_WhenUsernameAlreadyExists() throws Exception {
         createUser();
 
-        RegisterRequest request = new RegisterRequest(
-                USERNAME,
-                "new@example.com",
-                PASSWORD
-        );
+        RegisterRequest request = new RegisterRequest(USERNAME, "new@example.com", PASSWORD);
 
         mockMvc.perform(post("/api/v1/auth/sign-up")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -130,11 +64,7 @@ public class AuthControllerTest {
     void signUp_ShouldReturnConflict_WhenEmailAlreadyExists() throws Exception {
         createUser();
 
-        RegisterRequest request = new RegisterRequest(
-                "newUser",
-                EMAIL,
-                PASSWORD
-        );
+        RegisterRequest request = new RegisterRequest("newUser", EMAIL, PASSWORD);
 
         mockMvc.perform(post("/api/v1/auth/sign-up")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -147,14 +77,9 @@ public class AuthControllerTest {
     void signIn_ShouldReturnToken_WhenValidCredentials() throws Exception {
         createUser();
 
-        LoginRequest loginRequest = new LoginRequest(
-                USERNAME,
-                PASSWORD
-        );
-
         mockMvc.perform(post("/api/v1/auth/sign-in")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest)))
+                        .content(objectMapper.writeValueAsString(new LoginRequest(USERNAME, PASSWORD))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.userId").exists())
                 .andExpect(jsonPath("$.username").value(USERNAME))
@@ -166,28 +91,18 @@ public class AuthControllerTest {
     void signIn_ShouldReturnUnauthorized_WhenInvalidPassword() throws Exception {
         createUser();
 
-        LoginRequest loginRequest = new LoginRequest(
-                USERNAME,
-                "wrongPassword"
-        );
-
         mockMvc.perform(post("/api/v1/auth/sign-in")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest)))
+                        .content(objectMapper.writeValueAsString(new LoginRequest(USERNAME, "wrongPassword"))))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.errorCode").value("UNAUTHORIZED"));
     }
 
     @Test
     void signIn_ShouldReturnNotFound_WhenUserDoesNotExist() throws Exception {
-        LoginRequest loginRequest = new LoginRequest(
-                USERNAME,
-                PASSWORD
-        );
-
         mockMvc.perform(post("/api/v1/auth/sign-in")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest)))
+                        .content(objectMapper.writeValueAsString(new LoginRequest(USERNAME, PASSWORD))))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errorCode").value("USER_NOT_FOUND"));
     }
@@ -196,54 +111,76 @@ public class AuthControllerTest {
     void refresh_ShouldReturnNewAccessToken_WhenValidRefreshToken() throws Exception {
         createUser();
 
-        LoginRequest loginRequest = new LoginRequest(
-                USERNAME,
-                PASSWORD
-        );
-
         MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/sign-in")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest)))
+                        .content(objectMapper.writeValueAsString(new LoginRequest(USERNAME, PASSWORD))))
                 .andExpect(status().isOk())
                 .andReturn();
 
         String refreshToken = loginResult.getResponse().getCookie("refreshToken").getValue();
 
         mockMvc.perform(post("/api/v1/auth/refresh")
-                        .cookie(new jakarta.servlet.http.Cookie("refreshToken", refreshToken)))
+                        .cookie(new Cookie("refreshToken", refreshToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
                 .andExpect(jsonPath("$.username").value(USERNAME));
     }
 
     @Test
+    void refresh_ShouldReturnNotFound_WhenNoRefreshCookie() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/refresh"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.errorCode").value("TOKEN_NOT_FOUND"));
+    }
+
+    @Test
+    void refresh_ShouldIgnoreUnrelatedCookies() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .cookie(new Cookie("other", "value")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.errorCode").value("TOKEN_NOT_FOUND"));
+    }
+
+    @Test
     void logout_ShouldRevokeRefreshTokenAndDeleteCookie() throws Exception {
         createUser();
 
-        LoginRequest loginRequest = new LoginRequest(
-                USERNAME,
-                PASSWORD
-        );
-
         MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/sign-in")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest)))
+                        .content(objectMapper.writeValueAsString(new LoginRequest(USERNAME, PASSWORD))))
                 .andExpect(status().isOk())
                 .andReturn();
 
-        String responseBody = loginResult.getResponse().getContentAsString();
-        String accessToken = objectMapper.readTree(responseBody).get("token").asText();
-
+        String accessToken = objectMapper.readTree(loginResult.getResponse().getContentAsString())
+                .get("token").asText();
         String refreshToken = loginResult.getResponse().getCookie("refreshToken").getValue();
 
         mockMvc.perform(post("/api/v1/auth/logout")
-                        .header("Authorization", "Bearer " + accessToken)
-                        .cookie(new jakarta.servlet.http.Cookie("refreshToken", refreshToken)))
+                        .header("Authorization", bearer(accessToken))
+                        .cookie(new Cookie("refreshToken", refreshToken)))
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(post("/api/v1/auth/refresh")
-                        .cookie(new jakarta.servlet.http.Cookie("refreshToken", refreshToken)))
+                        .cookie(new Cookie("refreshToken", refreshToken)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.errorCode").value("INVALID_REFRESH_TOKEN"));
+    }
+
+    @Test
+    void logout_ShouldSucceed_WhenRefreshCookieMissing() throws Exception {
+        createUser();
+        String accessToken = loginAndGetToken(USERNAME, PASSWORD);
+
+        mockMvc.perform(post("/api/v1/auth/logout")
+                        .header("Authorization", bearer(accessToken)))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void protectedEndpoint_ShouldReturnUnauthorized_WhenJwtMalformed() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/logout")
+                        .header("Authorization", "Bearer not-a-jwt"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.errorCode").value("UNAUTHORIZED"));
     }
 }

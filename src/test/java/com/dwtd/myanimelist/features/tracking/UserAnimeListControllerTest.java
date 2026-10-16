@@ -1,133 +1,40 @@
 package com.dwtd.myanimelist.features.tracking;
 
 import com.dwtd.myanimelist.features.anime.entity.Anime;
-import com.dwtd.myanimelist.features.anime.enums.AnimeStatus;
-import com.dwtd.myanimelist.features.anime.enums.AnimeType;
-import com.dwtd.myanimelist.features.anime.repository.AnimeRepository;
-import com.dwtd.myanimelist.features.auth.dto.LoginRequest;
 import com.dwtd.myanimelist.features.auth.entity.User;
 import com.dwtd.myanimelist.features.auth.enums.Role;
-import com.dwtd.myanimelist.features.auth.repository.RefreshTokenRepository;
-import com.dwtd.myanimelist.features.auth.repository.UserRepository;
-import com.dwtd.myanimelist.features.comment.repository.CommentRepository;
-import com.dwtd.myanimelist.features.friendlist.repository.FriendListRepository;
 import com.dwtd.myanimelist.features.tracking.dto.AddUserAnimeListRequest;
 import com.dwtd.myanimelist.features.tracking.dto.UpdateUserAnimeListRequest;
-import com.dwtd.myanimelist.features.tracking.entity.UserAnimeList;
 import com.dwtd.myanimelist.features.tracking.enums.UserAnimeStatus;
-import com.dwtd.myanimelist.features.tracking.repository.UserAnimeListRepository;
+import com.dwtd.myanimelist.helpers.BaseIntegrationTest;
+import com.dwtd.myanimelist.helpers.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import tools.jackson.databind.ObjectMapper;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-public class UserAnimeListControllerTest {
+public class UserAnimeListControllerTest extends BaseIntegrationTest {
 
     private static final String BASE_URL = "/api/v1/users/me/animelist";
     private static final String USER_LIST_URL = "/api/v1/users/{username}/animelist";
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private RefreshTokenRepository refreshTokenRepository;
-
-    @Autowired
-    private UserAnimeListRepository userAnimeListRepository;
-
-    @Autowired
-    private AnimeRepository animeRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private CommentRepository commentRepository;
-
-    @Autowired
-    private FriendListRepository friendListRepository;
-
     private final String USERNAME = "TestUser";
     private final String PASSWORD = "Password123";
-    private final String EMAIL = "test@example.com";
 
     private String userToken;
     private Anime testAnime;
 
-
     @BeforeEach
     void setUp() throws Exception {
-        friendListRepository.deleteAll();
-        commentRepository.deleteAll();
-        refreshTokenRepository.deleteAll();
-        userAnimeListRepository.deleteAll();
-        animeRepository.deleteAll();
-        userRepository.deleteAll();
-
-        createUser(USERNAME, PASSWORD, EMAIL);
+        saveUser(USERNAME, "test@example.com", PASSWORD, Role.ROLE_USER);
         userToken = loginAndGetToken(USERNAME, PASSWORD);
-        testAnime = createAnime("Naruto", 220);
-    }
-
-    private void createUser(String username, String password, String email) {
-        User user = User.builder()
-                .username(username)
-                .email(email)
-                .password(passwordEncoder.encode(password))
-                .role(Role.ROLE_USER)
-                .build();
-        userRepository.save(user);
-    }
-
-    private String loginAndGetToken(String username, String password) throws Exception {
-        LoginRequest loginRequest = new LoginRequest(username, password);
-        MvcResult result = mockMvc.perform(post("/api/v1/auth/sign-in")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest)))
-                .andExpect(status().isOk())
-                .andReturn();
-        String json = result.getResponse().getContentAsString();
-        return objectMapper.readTree(json).get("token").asText();
-    }
-
-    private Anime createAnime(String title, int episodeCount) {
-        Anime anime = Anime.builder()
-                .titleRomaji(title)
-                .type(AnimeType.TV)
-                .episodeCount(episodeCount)
-                .status(AnimeStatus.FINISHED)
-                .build();
-        return animeRepository.save(anime);
+        testAnime = animeRepository.save(TestDataFactory.anime("Naruto", 220));
     }
 
     private void createUserAnimeList(User user, Anime anime, UserAnimeStatus status, Integer score, int watchedEpisodes) {
-        UserAnimeList entry = UserAnimeList.builder()
-                .user(user)
-                .anime(anime)
-                .status(status)
-                .score(score)
-                .watchedEpisodes(watchedEpisodes)
-                .build();
-        userAnimeListRepository.save(entry);
+        userAnimeListRepository.save(TestDataFactory.userAnimeList(user, anime, status, score, watchedEpisodes));
     }
 
     @Test
@@ -136,7 +43,7 @@ public class UserAnimeListControllerTest {
 
         mockMvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + userToken)
+                        .header("Authorization", bearer(userToken))
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.animeId").value(testAnime.getId()))
@@ -154,7 +61,7 @@ public class UserAnimeListControllerTest {
 
         mockMvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + userToken)
+                        .header("Authorization", bearer(userToken))
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.errorCode").value("ANIME_ALREADY_EXISTS_IN_USER_LIST"));
@@ -199,8 +106,7 @@ public class UserAnimeListControllerTest {
     @Test
     void getUserList_shouldFilterByStatus() throws Exception {
         User user = userRepository.findByUsername(USERNAME).orElseThrow();
-
-        Anime anime2 = createAnime("Attack on Titan", 87);
+        Anime anime2 = animeRepository.save(TestDataFactory.anime("Attack on Titan", 87));
         createUserAnimeList(user, testAnime, UserAnimeStatus.WATCHING, 8, 5);
         createUserAnimeList(user, anime2, UserAnimeStatus.COMPLETED, 9, 87);
 
@@ -231,7 +137,7 @@ public class UserAnimeListControllerTest {
 
         mockMvc.perform(patch(BASE_URL + "/{animeId}", testAnime.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + userToken)
+                        .header("Authorization", bearer(userToken))
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("COMPLETED"))
@@ -250,7 +156,7 @@ public class UserAnimeListControllerTest {
 
         mockMvc.perform(patch(BASE_URL + "/{animeId}", testAnime.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + userToken)
+                        .header("Authorization", bearer(userToken))
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("COMPLETED"))
@@ -268,7 +174,7 @@ public class UserAnimeListControllerTest {
 
         mockMvc.perform(patch(BASE_URL + "/{animeId}", testAnime.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + userToken)
+                        .header("Authorization", bearer(userToken))
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorCode").value("INVALID_USER_ANIME_DATA"));
@@ -282,7 +188,7 @@ public class UserAnimeListControllerTest {
 
         mockMvc.perform(patch(BASE_URL + "/{animeId}", testAnime.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + userToken)
+                        .header("Authorization", bearer(userToken))
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errorCode").value("USER_ANIME_LIST_NOT_FOUND"));
@@ -307,14 +213,14 @@ public class UserAnimeListControllerTest {
         createUserAnimeList(user, testAnime, UserAnimeStatus.WATCHING, 8, 5);
 
         mockMvc.perform(delete(BASE_URL + "/{animeId}", testAnime.getId())
-                        .header("Authorization", "Bearer " + userToken))
+                        .header("Authorization", bearer(userToken)))
                 .andExpect(status().isNoContent());
     }
 
     @Test
     void delete_shouldReturnNotFound_whenEntryNotExists() throws Exception {
-        mockMvc.perform(delete(BASE_URL + "/{animeId}", 999L)
-                        .header("Authorization", "Bearer " + userToken))
+        mockMvc.perform(delete(BASE_URL + "/{animeId}", 999999L)
+                        .header("Authorization", bearer(userToken)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errorCode").value("USER_ANIME_LIST_NOT_FOUND"));
     }
@@ -331,13 +237,11 @@ public class UserAnimeListControllerTest {
         User testUser = userRepository.findByUsername(USERNAME).orElseThrow();
         createUserAnimeList(testUser, testAnime, UserAnimeStatus.WATCHING, 8, 5);
 
-        String otherUsername = "OtherUser";
-        String otherPassword = "OtherPass";
-        createUser(otherUsername, otherPassword, "other@example.com");
-        String otherToken = loginAndGetToken(otherUsername, otherPassword);
+        saveUser("OtherUser", "other@example.com", "OtherPass", Role.ROLE_USER);
+        String otherToken = loginAndGetToken("OtherUser", "OtherPass");
 
         mockMvc.perform(delete(BASE_URL + "/{animeId}", testAnime.getId())
-                        .header("Authorization", "Bearer " + otherToken))
+                        .header("Authorization", bearer(otherToken)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errorCode").value("USER_ANIME_LIST_NOT_FOUND"));
     }
