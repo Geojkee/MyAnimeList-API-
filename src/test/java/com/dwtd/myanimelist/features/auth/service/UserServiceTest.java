@@ -118,4 +118,88 @@ class UserServiceTest {
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("not authenticated");
     }
+
+    @Test
+    void updateCurrentUser_shouldUpdateUsernameAndEmail_whenFree() {
+        User user = User.builder()
+                .id(1L)
+                .username("Alice")
+                .email("alice@example.com")
+                .password("encoded")
+                .role(Role.ROLE_USER)
+                .build();
+        authenticate("Alice");
+        when(userRepository.findByUsername("Alice")).thenReturn(Optional.of(user));
+        when(userRepository.existsByUsername("AliceNew")).thenReturn(false);
+        when(userRepository.existsByEmail("new@example.com")).thenReturn(false);
+        when(userRepository.save(user)).thenReturn(user);
+
+        User updated = userService.updateCurrentUser("AliceNew", "new@example.com");
+
+        assertThat(updated.getUsername()).isEqualTo("AliceNew");
+        assertThat(updated.getEmail()).isEqualTo("new@example.com");
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void updateCurrentUser_shouldSkipDuplicateCheck_whenValuesUnchanged() {
+        User user = User.builder()
+                .id(1L)
+                .username("Alice")
+                .email("alice@example.com")
+                .password("encoded")
+                .role(Role.ROLE_USER)
+                .build();
+        authenticate("Alice");
+        when(userRepository.findByUsername("Alice")).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+
+        User updated = userService.updateCurrentUser("Alice", "alice@example.com");
+
+        assertThat(updated.getUsername()).isEqualTo("Alice");
+        verify(userRepository, never()).existsByUsername(any());
+        verify(userRepository, never()).existsByEmail(any());
+    }
+
+    @Test
+    void updateCurrentUser_shouldThrow_whenUsernameTaken() {
+        User user = User.builder()
+                .id(1L)
+                .username("Alice")
+                .email("alice@example.com")
+                .password("encoded")
+                .role(Role.ROLE_USER)
+                .build();
+        authenticate("Alice");
+        when(userRepository.findByUsername("Alice")).thenReturn(Optional.of(user));
+        when(userRepository.existsByUsername("Bob")).thenReturn(true);
+
+        assertThatThrownBy(() -> userService.updateCurrentUser("Bob", null))
+                .isInstanceOf(UsernameAlreadyExistsException.class);
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void updateCurrentUser_shouldThrow_whenEmailTaken() {
+        User user = User.builder()
+                .id(1L)
+                .username("Alice")
+                .email("alice@example.com")
+                .password("encoded")
+                .role(Role.ROLE_USER)
+                .build();
+        authenticate("Alice");
+        when(userRepository.findByUsername("Alice")).thenReturn(Optional.of(user));
+        when(userRepository.existsByEmail("bob@example.com")).thenReturn(true);
+
+        assertThatThrownBy(() -> userService.updateCurrentUser(null, "bob@example.com"))
+                .isInstanceOf(EmailAlreadyExistsException.class);
+        verify(userRepository, never()).save(any());
+    }
+
+    private void authenticate(String username) {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(username, null, List.of())
+        );
+    }
 }

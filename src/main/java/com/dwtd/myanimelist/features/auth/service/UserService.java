@@ -52,4 +52,27 @@ public class UserService {
 
         return getByUsername(username);
     }
+
+    @Transactional
+    public User updateCurrentUser(String username, String email) {
+        User user = getCurrentUser();
+
+        if (username != null && !username.equals(user.getUsername())) {
+            if (userRepository.existsByUsername(username)) {
+                throw new UsernameAlreadyExistsException(username);
+            }
+            user.setUsername(username);
+        }
+
+        if (email != null && !email.equals(user.getEmail())) {
+            if (userRepository.existsByEmail(email)) {
+                throw new EmailAlreadyExistsException(email);
+            }
+            user.setEmail(email);
+        }
+
+        User savedUser = save(user);
+        log.info("User profile updated: id={}, username={}", savedUser.getId(), savedUser.getUsername());
+        return savedUser;
+    }
 }
