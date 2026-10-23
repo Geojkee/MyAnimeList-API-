@@ -1,6 +1,7 @@
 package com.dwtd.myanimelist.features.auth.service;
 
 import com.dwtd.myanimelist.exception.user.EmailAlreadyExistsException;
+import com.dwtd.myanimelist.exception.user.UserNotAuthenticatedException;
 import com.dwtd.myanimelist.exception.user.UserNotFoundException;
 import com.dwtd.myanimelist.exception.user.UsernameAlreadyExistsException;
 import com.dwtd.myanimelist.features.auth.entity.User;
@@ -45,7 +46,7 @@ public class UserService {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new RuntimeException("User is not authenticated");
+            throw new UserNotAuthenticatedException();
         }
 
         var username = authentication.getName();
