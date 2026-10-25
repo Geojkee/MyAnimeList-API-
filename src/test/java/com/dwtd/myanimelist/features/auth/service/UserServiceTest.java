@@ -1,6 +1,7 @@
 package com.dwtd.myanimelist.features.auth.service;
 
 import com.dwtd.myanimelist.exception.user.EmailAlreadyExistsException;
+import com.dwtd.myanimelist.exception.user.UserNotAuthenticatedException;
 import com.dwtd.myanimelist.exception.user.UserNotFoundException;
 import com.dwtd.myanimelist.exception.user.UsernameAlreadyExistsException;
 import com.dwtd.myanimelist.features.auth.entity.User;
@@ -103,8 +104,8 @@ class UserServiceTest {
         SecurityContextHolder.clearContext();
 
         assertThatThrownBy(() -> userService.getCurrentUser())
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("not authenticated");
+                .isInstanceOf(UserNotAuthenticatedException.class)
+                .hasMessageContaining("Authentication required");
     }
 
     @Test
@@ -115,8 +116,8 @@ class UserServiceTest {
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         assertThatThrownBy(() -> userService.getCurrentUser())
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("not authenticated");
+                .isInstanceOf(UserNotAuthenticatedException.class)
+                .hasMessageContaining("Authentication required");
     }
 
     @Test
