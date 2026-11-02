@@ -14,6 +14,7 @@ JWT-аутентификация с refresh-токеном в HTTP-only cookie, 
 | **Java 21+** | запуск приложения |
 | **Git** | клонирование репозитория |
 | **Docker Desktop** (или Docker Engine + Compose) | PostgreSQL одной командой |
+| **Make** (опционально) | короткие команды из `Makefile` (`make up`, `make run`, …) |
 | Maven | **не обязателен** — есть `./mvnw` / `mvnw.cmd` |
 
 Проверка версий:
@@ -22,6 +23,7 @@ JWT-аутентификация с refresh-токеном в HTTP-only cookie, 
 java -version          # 21+
 docker compose version
 git --version
+make -v                # опционально
 ```
 
 ---
@@ -29,6 +31,20 @@ git --version
 ## Запуск (рекомендуемый способ)
 
 БД в Docker, API через Maven — удобно для разработки.
+
+### Через Make (короче)
+
+```bash
+git clone https://github.com/Geojkee/MyAnimeList-API-.git
+cd MyAnimeList-API-
+
+make up      # .env (если нет) + PostgreSQL
+make run     # Spring Boot на :8080
+```
+
+Список всех целей: `make` или `make help`.
+
+### Без Make (те же шаги вручную)
 
 ```bash
 # 1. Клонировать
@@ -41,18 +57,15 @@ cp .env.example .env
 # 3. Поднять PostgreSQL
 docker compose up -d postgres
 
-# 4. Дождаться готовности БД (опционально)
+# 4. Статус БД (опционально)
 docker compose ps
 
 # 5. Запустить API
 ./mvnw spring-boot:run
 ```
 
-На **Windows** (PowerShell / cmd) шаг 5:
-
-```bat
-mvnw.cmd spring-boot:run
-```
+На **Windows** для API: `mvnw.cmd spring-boot:run`.  
+`Makefile` рассчитан на Linux/macOS / Git Bash / WSL; в чистом cmd удобнее команды Compose/`mvnw.cmd` вручную.
 
 Если на Linux/macOS `./mvnw` не запускается:
 
@@ -75,14 +88,39 @@ chmod +x mvnw
 ### Остановка
 
 ```bash
-# остановить API: Ctrl+C в терминале, где крутится spring-boot:run
+# остановить API: Ctrl+C в терминале, где крутится make run / spring-boot:run
 
-# остановить Postgres (данные в volume сохраняются)
-docker compose down
+make down      # остановить контейнеры (данные сохранить)
+make down-v    # остановить и удалить volume с данными БД
 
-# остановить Postgres и удалить данные
-docker compose down -v
+# то же без Make:
+# docker compose down
+# docker compose down -v
 ```
+
+---
+
+## Makefile — краткие команды
+
+| Команда | Что делает |
+|---------|------------|
+| `make` / `make help` | список целей |
+| `make env` | создать `.env` из `.env.example` (если ещё нет) |
+| `make up` | поднять PostgreSQL |
+| `make down` | остановить контейнеры |
+| `make down-v` | остановить и удалить данные БД |
+| `make ps` | статус контейнеров |
+| `make logs` | логи Postgres |
+| `make run` | запуск API (`./mvnw spring-boot:run`) |
+| `make full` | Postgres + API целиком в Docker |
+| `make full-down` | остановить полный стек |
+| `make full-logs` | логи API + Postgres |
+| `make test` | тесты |
+| `make verify` | тесты + JaCoCo |
+| `make package` | собрать jar |
+| `make build` | собрать Docker-образ API |
+| `make clean` | `mvn clean` |
+| `make restart` | перезапуск Postgres |
 
 ---
 
@@ -95,12 +133,13 @@ docker compose down -v
 ```bash
 git clone https://github.com/Geojkee/MyAnimeList-API-.git
 cd MyAnimeList-API-
-cp .env.example .env
-docker compose --profile full up --build
+
+make full
+# или: cp .env.example .env && docker compose --profile full up --build -d
 ```
 
 API: http://localhost:8080  
-Остановка: `docker compose --profile full down`
+Остановка: `make full-down` (или `docker compose --profile full down`).
 
 ### Свой PostgreSQL без Docker
 
@@ -253,15 +292,20 @@ Dockerfile                         # образ API
 ## Полезные команды
 
 ```bash
-./mvnw spring-boot:run                 # запуск API
-./mvnw test                            # тесты
-./mvnw verify                          # тесты + JaCoCo
-./mvnw -DskipTests package             # сборка jar
-java -jar target/MyAnimeList-0.0.1-SNAPSHOT.jar
-docker compose up -d postgres          # только БД
-docker compose --profile full up --build
+make up && make run                    # типичный dev-цикл
+make full                              # весь стек в Docker
+make test                              # тесты
+make package && java -jar target/MyAnimeList-0.0.1-SNAPSHOT.jar
+
+# эквиваленты без Make:
+./mvnw spring-boot:run
+./mvnw test
+./mvnw verify
+./mvnw -DskipTests package
+docker compose up -d postgres
+docker compose --profile full up --build -d
 docker compose down
-docker compose down -v                 # БД + удалить volume
+docker compose down -v
 ```
 
 ## CI
