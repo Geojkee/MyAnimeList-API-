@@ -7,58 +7,153 @@ REST API для каталога аниме и пользовательских 
 
 JWT-аутентификация с refresh-токеном в HTTP-only cookie, каталог аниме и жанров, профили, anime list, комментарии, друзья. Схема БД — Liquibase, документация — Swagger UI.
 
-## Быстрый старт (локально)
+## Что нужно установить
 
-Нужны: **Java 21**, **Docker** (для PostgreSQL) или свой PostgreSQL 15+, **Git**. Maven ставится не обязательно — в репозитории есть `./mvnw`.
+| Инструмент | Зачем |
+|------------|--------|
+| **Java 21+** | запуск приложения |
+| **Git** | клонирование репозитория |
+| **Docker Desktop** (или Docker Engine + Compose) | PostgreSQL одной командой |
+| Maven | **не обязателен** — есть `./mvnw` / `mvnw.cmd` |
 
-### Вариант A — БД в Docker, приложение через Maven (рекомендуется для разработки)
+Проверка версий:
 
 ```bash
+java -version          # 21+
+docker compose version
+git --version
+```
+
+---
+
+## Запуск (рекомендуемый способ)
+
+БД в Docker, API через Maven — удобно для разработки.
+
+```bash
+# 1. Клонировать
 git clone https://github.com/Geojkee/MyAnimeList-API-.git
 cd MyAnimeList-API-
 
+# 2. Конфиг окружения
 cp .env.example .env
 
+# 3. Поднять PostgreSQL
 docker compose up -d postgres
 
+# 4. Дождаться готовности БД (опционально)
+docker compose ps
+
+# 5. Запустить API
 ./mvnw spring-boot:run
 ```
 
-Откройте:
+На **Windows** (PowerShell / cmd) шаг 5:
 
-- API: http://localhost:8080  
-- Swagger UI: http://localhost:8080/swagger-ui/index.html  
-- OpenAPI JSON: http://localhost:8080/v3/api-docs  
+```bat
+mvnw.cmd spring-boot:run
+```
 
-Остановка БД: `docker compose down` (данные сохраняются в volume `postgres_data`).
+Если на Linux/macOS `./mvnw` не запускается:
 
-### Вариант B — всё в Docker (Postgres + API)
+```bash
+chmod +x mvnw
+./mvnw spring-boot:run
+```
+
+В логах должно появиться примерно: `Started MyAnimeListApplication`.  
+Миграции Liquibase применяются автоматически при старте.
+
+### Куда заходить
+
+| Что | URL |
+|-----|-----|
+| API | http://localhost:8080 |
+| Swagger UI | http://localhost:8080/swagger-ui/index.html |
+| OpenAPI JSON | http://localhost:8080/v3/api-docs |
+
+### Остановка
+
+```bash
+# остановить API: Ctrl+C в терминале, где крутится spring-boot:run
+
+# остановить Postgres (данные в volume сохраняются)
+docker compose down
+
+# остановить Postgres и удалить данные
+docker compose down -v
+```
+
+---
+
+## Другие способы запуска
+
+### Всё в Docker (Postgres + API)
+
+Нужен только Docker (Java на хосте не обязателен):
 
 ```bash
 git clone https://github.com/Geojkee/MyAnimeList-API-.git
 cd MyAnimeList-API-
-
 cp .env.example .env
-
 docker compose --profile full up --build
 ```
 
-API будет на http://localhost:8080. Остановка: `docker compose --profile full down`.
+API: http://localhost:8080  
+Остановка: `docker compose --profile full down`
 
-### Вариант C — свой PostgreSQL без Docker
+### Свой PostgreSQL без Docker
 
-1. Создайте БД, например `myanimelist`.
-2. `cp .env.example .env` и поправьте `POSTGRES_URL` / `POSTGRES_USER` / `POSTGRES_PASSWORD`.
-3. `./mvnw spring-boot:run`
+1. Создайте БД, например `myanimelist`, и пользователя с доступом к ней.
+2. `cp .env.example .env`
+3. В `.env` поправьте `POSTGRES_URL`, `POSTGRES_USER`, `POSTGRES_PASSWORD`.
+4. `./mvnw spring-boot:run` (или `mvnw.cmd spring-boot:run` на Windows).
 
-Liquibase применит миграции при старте.
+### Запуск из готового JAR
 
-> На Windows используйте `mvnw.cmd` вместо `./mvnw`. Если `./mvnw` не исполняется: `chmod +x mvnw`.
+```bash
+./mvnw -DskipTests package
+java -jar target/MyAnimeList-0.0.1-SNAPSHOT.jar
+```
+
+Перед этим Postgres должен быть доступен (как в `.env` / defaults).
+
+---
+
+## Проверка, что всё работает
+
+После старта API:
+
+```bash
+# каталог аниме (публичный)
+curl http://localhost:8080/api/v1/anime
+
+# регистрация
+curl -X POST http://localhost:8080/api/v1/auth/sign-up \
+  -H "Content-Type: application/json" \
+  -d '{"username":"demo_user","email":"demo@example.com","password":"password1"}'
+
+# вход (access token в поле token; refresh — в cookie)
+curl -c cookies.txt -X POST http://localhost:8080/api/v1/auth/sign-in \
+  -H "Content-Type: application/json" \
+  -d '{"username":"demo_user","password":"password1"}'
+
+# свой профиль (подставьте token из ответа)
+curl http://localhost:8080/api/v1/users/me \
+  -H "Authorization: Bearer ВАШ_ACCESS_TOKEN"
+```
+
+Дальше удобнее кликать эндпоинты в Swagger: http://localhost:8080/swagger-ui/index.html  
+В Swagger для защищённых методов: Authorize → `Bearer <token>`.
+
+---
 
 ## Переменные окружения
 
-Файл `.env` (шаблон — `.env.example`) подхватывается Spring Boot (`optional:file:.env[.properties]`).  
-В `application.yaml` заданы **локальные значения по умолчанию**: без `.env` приложение тоже стартует, если PostgreSQL доступен на `localhost:5432` с БД `myanimelist` и пользователем/паролем `postgres`.
+Шаблон: [`.env.example`](.env.example). Скопируйте в `.env` (файл в `.gitignore`, в git не попадёт).
+
+Spring читает `.env` как properties (`spring.config.import: optional:file:.env[.properties]`).  
+В `application.yaml` есть **локальные defaults**: без `.env` тоже стартует, если Postgres на `localhost:5432`, БД `myanimelist`, user/password `postgres`.
 
 | Переменная | По умолчанию (local) | Назначение |
 |------------|----------------------|------------|
@@ -67,15 +162,45 @@ Liquibase применит миграции при старте.
 | `POSTGRES_PASSWORD` | `postgres` | Пароль БД |
 | `POSTGRES_DB` | `myanimelist` | Имя БД (Compose) |
 | `POSTGRES_PORT` | `5432` | Порт Postgres (Compose) |
-| `JWT_SECRET` | Base64 local key (≥32 байт после decode) | Подпись JWT — **только Base64**, смените в проде |
-| `JWT_EXPIRATION` | `86400000` | TTL access token, мс |
+| `JWT_SECRET` | Base64-ключ в `.env.example` | Подпись JWT — **только Base64** |
+| `JWT_EXPIRATION` | `86400000` | TTL access token, мс (~1 сутки) |
 | `REFRESH_TOKEN_DURATION` | `2592000000` | TTL refresh token в БД, мс |
 | `REFRESH_TOKEN_MAX_AGE_SECONDS` | `2592000` | Max-Age cookie |
 | `COOKIE_PATH` | `/api/v1/auth` | Path cookie `refreshToken` |
 | `COOKIE_SECURE` | `false` | `true` только за HTTPS |
 | `SERVER_PORT` | `8080` | Порт приложения |
 
-`.env` в git не коммитится.
+Сгенерировать новый `JWT_SECRET`:
+
+```bash
+python3 -c "import os,base64; print(base64.b64encode(os.urandom(32)).decode())"
+```
+
+---
+
+## Тесты
+
+Тесты используют in-memory **H2** (профиль `test`), отдельный Postgres для них не нужен:
+
+```bash
+./mvnw test          # или: mvnw.cmd test
+./mvnw verify        # тесты + отчёт JaCoCo (как в CI)
+```
+
+---
+
+## Типичные проблемы
+
+| Симптом | Что сделать |
+|---------|-------------|
+| `Connection to localhost:5432 refused` | Не запущен Postgres: `docker compose up -d postgres` |
+| `database "myanimelist" does not exist` | Compose создаёт БД сам; при своём Postgres создайте БД вручную |
+| `Illegal base64 character` / 500 на sign-up | `JWT_SECRET` не Base64 — возьмите значение из `.env.example` или сгенерируйте командой выше |
+| Порт `8080` занят | Смените `SERVER_PORT` в `.env` или остановите другой процесс |
+| `./mvnw: Permission denied` | `chmod +x mvnw` |
+| Docker не найден | Установите Docker Desktop / Engine или используйте вариант со своим Postgres |
+
+---
 
 ## Стек
 
@@ -93,17 +218,20 @@ src/main/java/com/dwtd/myanimelist/
 ├── security/     # JWT filter, SecurityConfiguration
 └── exception/    # GlobalExceptionHandler
 src/main/resources/db/changelog/   # Liquibase V1–V7
+.env.example                       # шаблон окружения
+docker-compose.yaml                # postgres (+ app с --profile full)
+Dockerfile                         # образ API
 ```
 
-## Аутентификация (кратко)
+## Аутентификация
 
-1. `POST /api/v1/auth/sign-up` — регистрация (`ROLE_USER`), access token в ответе.  
-2. `POST /api/v1/auth/sign-in` — access token в JSON (`token`), refresh в cookie `refreshToken`.  
-3. Защищённые запросы: `Authorization: Bearer <accessToken>`.  
-4. `POST /api/v1/auth/refresh` — ротация refresh (из cookie).  
+1. `POST /api/v1/auth/sign-up` — регистрация (`ROLE_USER`), access token в ответе.
+2. `POST /api/v1/auth/sign-in` — access token в JSON (`token`), refresh в cookie `refreshToken`.
+3. Защищённые запросы: заголовок `Authorization: Bearer <accessToken>`.
+4. `POST /api/v1/auth/refresh` — ротация refresh (из cookie).
 5. `POST /api/v1/auth/logout` — отзыв refresh (нужна аутентификация).
 
-Публично: sign-up / sign-in / refresh, GET аниме и жанров, публичный профиль и anime list, GET комментариев, Swagger.  
+Публично без токена: sign-up / sign-in / refresh, GET аниме и жанров, публичный профиль и anime list, GET комментариев, Swagger.  
 `ROLE_ADMIN` — запись в каталог аниме/жанров и удаление чужих комментариев (роль выставляется в БД; отдельного admin API нет).
 
 ## Обзор API (`/api/v1`)
@@ -118,19 +246,22 @@ src/main/resources/db/changelog/   # Liquibase V1–V7
 | Comments | `/anime/{animeId}/comments` | pageable |
 | Friends | `/users/me/friends` | заявки accept/reject/cancel |
 
-Типы аниме: `TV`, `MOVIE`, `OVA`, `SPECIAL`. Статусы: `ANNOUNCED`, `ONGOING`, `FINISHED`.  
-Подробные схемы — в Swagger: http://localhost:8080/swagger-ui/index.html
+Типы аниме: `TV`, `MOVIE`, `OVA`, `SPECIAL`.  
+Статусы аниме: `ANNOUNCED`, `ONGOING`, `FINISHED`.  
+Статусы списка: `PLAN_TO_WATCH`, `WATCHING`, `COMPLETED`, `ON_HOLD`, `DROPPED`.
 
 ## Полезные команды
 
 ```bash
-./mvnw spring-boot:run    # запуск API
-./mvnw test               # тесты (H2, профиль test)
-./mvnw verify             # тесты + JaCoCo (как в CI)
-./mvnw package            # jar в target/
-docker compose up -d postgres
+./mvnw spring-boot:run                 # запуск API
+./mvnw test                            # тесты
+./mvnw verify                          # тесты + JaCoCo
+./mvnw -DskipTests package             # сборка jar
+java -jar target/MyAnimeList-0.0.1-SNAPSHOT.jar
+docker compose up -d postgres          # только БД
 docker compose --profile full up --build
 docker compose down
+docker compose down -v                 # БД + удалить volume
 ```
 
 ## CI
@@ -140,9 +271,9 @@ docker compose down
 ## Заметки
 
 - Учебный проект: дефолтные секреты только для local. В проде задайте свои env.
-- `JWT_SECRET` читается как **Base64** (`Decoders.BASE64` в `JwtService`). Обычная «человеческая» строка с `-` приведёт к 500 при выдаче токена.
+- `JWT_SECRET` читается как **Base64** (`Decoders.BASE64` в `JwtService`). Обычная строка с `-` даст 500 при выдаче токена.
 - CORS: origin patterns `*`, credentials включены.
-- Полный Docker-стек (`profile: full`) удобен для «поднять и посмотреть»; для разработки кода удобнее вариант A.
+- Для «просто посмотреть» удобен Docker profile `full`; для разработки кода — Postgres в Compose + `./mvnw spring-boot:run`.
 
 ## Лицензия
 
