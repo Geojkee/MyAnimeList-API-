@@ -129,13 +129,13 @@ public class AuthService {
     }
 
     private void setRefreshTokenCookie(HttpServletResponse response, String token){
-        ResponseCookie deleteCookie = ResponseCookie.from("refreshToken", token)
+        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", token)
                 .httpOnly(true)
-                .secure(false)
+                .secure(cookieSecure)
                 .sameSite("Strict")
                 .path(refreshCookiePath)
                 .maxAge(Duration.ofSeconds(refreshTokenMaxAgeSeconds))
                 .build();
-        response.addHeader("Set-Cookie", deleteCookie.toString());
+        response.addHeader("Set-Cookie", refreshCookie.toString());
     }
 }

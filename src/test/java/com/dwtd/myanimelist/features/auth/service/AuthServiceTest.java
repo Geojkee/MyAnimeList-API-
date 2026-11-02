@@ -145,7 +145,33 @@ public class AuthServiceTest {
         verify(passwordEncoder).matches("Password123", "encodedPassword");
         verify(jwtService).generateToken(user);
         verify(refreshTokenService).createRefreshToken(user);
-        verify(mockResponse).addHeader(eq("Set-Cookie"), anyString());
+        ArgumentCaptor<String> cookieCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mockResponse).addHeader(eq("Set-Cookie"), cookieCaptor.capture());
+        assertThat(cookieCaptor.getValue()).doesNotContain("Secure");
+    }
+
+    @Test
+    void signIn_ShouldSetSecureCookie_WhenCookieSecureIsEnabled() {
+        ReflectionTestUtils.setField(authService, "cookieSecure", true);
+        LoginRequest request = new LoginRequest("TestUser", "Password123");
+        User user = User.builder()
+                .id(1L)
+                .password("encodedPassword")
+                .username("TestUser")
+                .role(Role.ROLE_USER)
+                .build();
+        when(userService.getByUsername("TestUser")).thenReturn(user);
+        when(passwordEncoder.matches("Password123", "encodedPassword")).thenReturn(true);
+        when(jwtService.generateToken(user)).thenReturn("jwt.token.here");
+        when(refreshTokenService.createRefreshToken(user)).thenReturn(
+                RefreshToken.builder().token("refresh-token-uuid").build()
+        );
+
+        authService.signIn(request, mockResponse);
+
+        ArgumentCaptor<String> cookieCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mockResponse).addHeader(eq("Set-Cookie"), cookieCaptor.capture());
+        assertThat(cookieCaptor.getValue()).contains("Secure");
     }
 
     @Test
