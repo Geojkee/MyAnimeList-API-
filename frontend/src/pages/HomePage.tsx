@@ -1,9 +1,40 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/endpoints'
+import { ApiRequestError } from '../api/client'
 import { AnimeTile } from '../components/AnimeTile'
+import { EmptyState } from '../components/EmptyState'
+import { PosterArt } from '../components/PosterArt'
 import { useAuth } from '../auth/AuthContext'
 import type { Anime, AnimeStatus, AnimeType, Genre, Page } from '../types/api'
+
+function friendlyError(err: unknown) {
+  if (err instanceof ApiRequestError) {
+    if (err.status === 502 || err.status === 503 || err.status === 504) {
+      return 'API is unreachable. Start it with make up && make run, then refresh.'
+    }
+    return err.message
+  }
+  if (err instanceof TypeError) {
+    return 'Cannot reach the API. Is it running on :8080?'
+  }
+  if (err instanceof Error) return err.message
+  return 'Failed to load anime'
+}
+
+function SkeletonGrid() {
+  return (
+    <div className="skeleton-grid" aria-hidden>
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className="skeleton-card">
+          <div className="skeleton-poster" />
+          <div className="skeleton-line" />
+          <div className="skeleton-line skeleton-line--short" />
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export function HomePage() {
   const { user } = useAuth()
@@ -39,8 +70,8 @@ export function HomePage() {
       .then((result) => {
         if (!cancelled) setData(result)
       })
-      .catch((err: Error) => {
-        if (!cancelled) setError(err.message || 'Failed to load anime')
+      .catch((err: unknown) => {
+        if (!cancelled) setError(friendlyError(err))
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -57,22 +88,44 @@ export function HomePage() {
     setSearch(draftSearch.trim())
   }
 
+  function clearFilters() {
+    setDraftSearch('')
+    setSearch('')
+    setType('')
+    setStatus('')
+    setGenreId('')
+    setPage(0)
+  }
+
+  const hasFilters = !!(search || type || status || genreId)
+
   return (
     <>
       <section className="hero" aria-label="MyAnimeList hero">
         <div className="hero__wash" />
         <div className="hero__beam" />
+        <div className="hero__posters" aria-hidden>
+          <div className="hero__poster">
+            <PosterArt seed="hero-a" title="Neon Pulse" type="TV" size="hero" />
+          </div>
+          <div className="hero__poster">
+            <PosterArt seed="hero-b" title="Crimson Arc" type="MOVIE" size="hero" />
+          </div>
+          <div className="hero__poster">
+            <PosterArt seed="hero-c" title="Night Rail" type="OVA" size="hero" />
+          </div>
+        </div>
         <div className="hero__content">
           <h1 className="hero__brand">
             MyAnime<span>List</span>
           </h1>
           <p className="hero__lead">
-            Browse the catalog, track what you&apos;re watching, and leave notes —
-            a night-screening front for the MyAnimeList API.
+            Your night-screening catalog — discover titles, track progress, and leave thoughts
+            with friends who watch.
           </p>
           <div className="hero__actions">
             <a href="#catalog" className="btn btn-primary">
-              Enter catalog
+              Browse catalog
             </a>
             {user ? (
               <Link to="/my-list" className="btn btn-ghost">
@@ -80,7 +133,7 @@ export function HomePage() {
               </Link>
             ) : (
               <Link to="/auth/sign-up" className="btn btn-ghost">
-                Create account
+                Join free
               </Link>
             )}
           </div>
@@ -90,15 +143,18 @@ export function HomePage() {
       <section id="catalog">
         <div className="section-head">
           <div>
-            <h2>Catalog</h2>
-            <p>Search and filter titles from <code>GET /api/v1/anime</code>.</p>
+            <h2>Now screening</h2>
+            <p>Search by title, type, airing status, or genre.</p>
           </div>
+          {data && !data.empty && (
+            <span className="section-count">{data.totalElements} titles</span>
+          )}
         </div>
 
         <form className="filters" onSubmit={onSearch}>
           <input
             className="field"
-            placeholder="Search title…"
+            placeholder="Search titles…"
             value={draftSearch}
             onChange={(e) => setDraftSearch(e.target.value)}
             aria-label="Search anime"
@@ -128,8 +184,8 @@ export function HomePage() {
             aria-label="Status"
           >
             <option value="">All statuses</option>
-            <option value="ANNOUNCED">Announced</option>
-            <option value="ONGOING">Ongoing</option>
+            <option value="ANNOUNCED">Upcoming</option>
+            <option value="ONGOING">Airing</option>
             <option value="FINISHED">Finished</option>
           </select>
           <select
@@ -155,21 +211,39 @@ export function HomePage() {
 
         {error && <div className="status-banner status-banner--error">{error}</div>}
 
-        {loading && <div className="status-banner">Loading titles…</div>}
+        {loading && <SkeletonGrid />}
 
         {!loading && data && data.empty && (
-          <div className="empty">
-            <strong>No anime in the catalog yet</strong>
-            Titles are created by admins via the API / Swagger. Once seeded, they
-            appear here automatically.
-          </div>
+          <EmptyState
+            title={hasFilters ? 'No matches' : 'Catalog is quiet tonight'}
+            action={
+              hasFilters ? (
+                <button type="button" className="btn btn-ghost" onClick={clearFilters}>
+                  Clear filters
+                </button>
+              ) : (
+                <a
+                  className="btn btn-ghost"
+                  href="http://localhost:8080/swagger-ui/index.html"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open Swagger to seed titles
+                </a>
+              )
+            }
+          >
+            {hasFilters
+              ? 'Try a different search or clear filters.'
+              : 'Once an admin adds anime via the API, they appear here with poster art and filters.'}
+          </EmptyState>
         )}
 
         {!loading && data && !data.empty && (
           <>
             <div className="anime-grid">
-              {data.content.map((anime) => (
-                <AnimeTile key={anime.id} anime={anime} />
+              {data.content.map((anime, i) => (
+                <AnimeTile key={anime.id} anime={anime} index={i} />
               ))}
             </div>
             <div className="pager">
@@ -182,8 +256,7 @@ export function HomePage() {
                 Previous
               </button>
               <span>
-                Page {data.number + 1} / {Math.max(data.totalPages, 1)} ·{' '}
-                {data.totalElements} titles
+                Page {data.number + 1} / {Math.max(data.totalPages, 1)}
               </span>
               <button
                 type="button"

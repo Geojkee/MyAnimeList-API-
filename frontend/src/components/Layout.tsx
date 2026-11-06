@@ -9,15 +9,20 @@ export function Layout() {
       <header className="site-header">
         <div className="site-header__inner">
           <Link to="/" className="brand">
-            <div className="brand__mark">
-              MyAnime<span>List</span>
-            </div>
-            <div className="brand__tag">Catalog UI</div>
+            <span className="brand__glyph" aria-hidden>
+              ▲
+            </span>
+            <span className="brand__text">
+              <span className="brand__mark">
+                MyAnime<span>List</span>
+              </span>
+              <span className="brand__tag">Watch · Track · Discuss</span>
+            </span>
           </Link>
 
-          <nav className="nav-links">
+          <nav className="nav-links" aria-label="Primary">
             <NavLink to="/" end>
-              Browse
+              Catalog
             </NavLink>
             {user && (
               <>
@@ -32,20 +37,23 @@ export function Layout() {
               <span className="user-chip">…</span>
             ) : user ? (
               <>
-                <span className="user-chip">
-                  Signed in as <strong>{user.username}</strong>
-                </span>
-                <button type="button" className="btn btn-ghost" onClick={() => void logout()}>
+                <Link to={`/u/${user.username}`} className="user-chip user-chip--link">
+                  <span className="user-chip__avatar" aria-hidden>
+                    {user.username.slice(0, 1).toUpperCase()}
+                  </span>
+                  <strong>{user.username}</strong>
+                </Link>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => void logout()}>
                   Log out
                 </button>
               </>
             ) : (
               <>
-                <Link to="/auth/sign-in" className="btn btn-ghost">
+                <Link to="/auth/sign-in" className="btn btn-ghost btn-sm">
                   Sign in
                 </Link>
-                <Link to="/auth/sign-up" className="btn btn-primary">
-                  Sign up
+                <Link to="/auth/sign-up" className="btn btn-primary btn-sm">
+                  Join free
                 </Link>
               </>
             )}
@@ -58,7 +66,12 @@ export function Layout() {
       </main>
 
       <footer className="site-footer">
-        MyAnimeList UI · talks to <code>/api/v1</code> on the Spring Boot API
+        <div className="site-footer__inner">
+          <span className="brand__mark">
+            MyAnime<span>List</span>
+          </span>
+          <p>A night-screening companion for your anime list.</p>
+        </div>
       </footer>
     </div>
   )

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { Anime } from '../types/api'
+import { PosterArt } from './PosterArt'
 
 function statusClass(status: Anime['status']) {
   if (status === 'ONGOING') return 'badge badge--ok'
@@ -7,7 +8,13 @@ function statusClass(status: Anime['status']) {
   return 'badge'
 }
 
-export function AnimeTile({ anime }: { anime: Anime }) {
+function statusLabel(status: Anime['status']) {
+  if (status === 'ONGOING') return 'Airing'
+  if (status === 'ANNOUNCED') return 'Upcoming'
+  return 'Finished'
+}
+
+export function AnimeTile({ anime, index = 0 }: { anime: Anime; index?: number }) {
   const title = anime.titleEnglish || anime.titleRomaji
   const subtitle =
     anime.titleEnglish && anime.titleEnglish !== anime.titleRomaji
@@ -15,30 +22,29 @@ export function AnimeTile({ anime }: { anime: Anime }) {
       : null
 
   return (
-    <Link to={`/anime/${anime.id}`} className="anime-tile">
-      <div className="anime-tile__meta">
-        <span className="badge badge--accent">{anime.type}</span>
-        <span className={statusClass(anime.status)}>{anime.status}</span>
-        {anime.episodeCount != null && (
-          <span className="badge">{anime.episodeCount} ep</span>
+    <Link
+      to={`/anime/${anime.id}`}
+      className="anime-card"
+      style={{ animationDelay: `${Math.min(index, 11) * 45}ms` }}
+    >
+      <PosterArt seed={anime.id} title={title} type={anime.type} />
+      <div className="anime-card__body">
+        <div className="anime-card__meta">
+          <span className={statusClass(anime.status)}>{statusLabel(anime.status)}</span>
+          {anime.episodeCount != null && (
+            <span className="badge">{anime.episodeCount} ep</span>
+          )}
+        </div>
+        <h3 className="anime-card__title">{title}</h3>
+        {subtitle && <p className="anime-card__sub">{subtitle}</p>}
+        {anime.genres?.length > 0 && (
+          <div className="anime-card__genres">
+            {anime.genres.slice(0, 3).map((g) => (
+              <span key={g.id}>{g.name}</span>
+            ))}
+          </div>
         )}
       </div>
-      <div>
-        <h3>{title}</h3>
-        {subtitle && <p className="anime-tile__sub">{subtitle}</p>}
-      </div>
-      <p className="anime-tile__synopsis">
-        {anime.synopsis || 'No synopsis yet — open for details and comments.'}
-      </p>
-      {anime.genres?.length > 0 && (
-        <div className="anime-tile__meta">
-          {anime.genres.slice(0, 3).map((g) => (
-            <span key={g.id} className="badge">
-              {g.name}
-            </span>
-          ))}
-        </div>
-      )}
     </Link>
   )
 }

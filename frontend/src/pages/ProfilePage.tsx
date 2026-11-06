@@ -2,8 +2,18 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api/endpoints'
 import { ApiRequestError, setStoredToken } from '../api/client'
+import { EmptyState } from '../components/EmptyState'
+import { PosterArt } from '../components/PosterArt'
 import { useAuth } from '../auth/AuthContext'
-import type { UserAnimeListSummary, UserProfile } from '../types/api'
+import type { UserAnimeListSummary, UserAnimeStatus, UserProfile } from '../types/api'
+
+const STATUS_LABEL: Record<UserAnimeStatus, string> = {
+  PLAN_TO_WATCH: 'Plan to watch',
+  WATCHING: 'Watching',
+  COMPLETED: 'Completed',
+  ON_HOLD: 'On hold',
+  DROPPED: 'Dropped',
+}
 
 export function ProfilePage() {
   const { username } = useParams<{ username: string }>()
@@ -86,16 +96,29 @@ export function ProfilePage() {
 
   return (
     <>
-      <h1 className="page-title">{profile.username}</h1>
-      <p className="page-lead">
-        {profile.role.replace('ROLE_', '')} · joined{' '}
-        {new Date(profile.createdAt).toLocaleDateString()}
-        {profile.email ? ` · ${profile.email}` : ''}
-      </p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '1.75rem' }}>
+        <span
+          className="user-chip__avatar"
+          style={{ width: '3.2rem', height: '3.2rem', fontSize: '1.2rem' }}
+          aria-hidden
+        >
+          {profile.username.slice(0, 1).toUpperCase()}
+        </span>
+        <div>
+          <h1 className="page-title" style={{ margin: 0 }}>
+            {profile.username}
+          </h1>
+          <p className="page-lead" style={{ marginBottom: 0 }}>
+            {profile.role.replace('ROLE_', '')} · joined{' '}
+            {new Date(profile.createdAt).toLocaleDateString()}
+            {profile.email ? ` · ${profile.email}` : ''}
+          </p>
+        </div>
+      </div>
 
-      <div className="profile-grid">
-        <section className="panel" style={{ borderTop: 'none', paddingTop: 0 }}>
-          <h2>{isMe ? 'Edit profile' : 'Public profile'}</h2>
+      <div className="profile-grid" style={{ marginTop: '1.75rem' }}>
+        <section className="profile-card">
+          <h2>{isMe ? 'Edit profile' : 'About'}</h2>
           {isMe ? (
             <form className="form-stack" onSubmit={onSave}>
               <div className="form-row">
@@ -130,17 +153,17 @@ export function ProfilePage() {
             </form>
           ) : (
             <p className="synopsis" style={{ margin: 0 }}>
-              Viewing a public profile. Anime list is visible to everyone.
+              Public profile and anime list. Sign in to manage your own.
             </p>
           )}
         </section>
 
-        <section className="panel" style={{ borderTop: 'none', paddingTop: 0 }}>
+        <section className="profile-card">
           <h2>Anime list ({list.length})</h2>
           {list.length === 0 ? (
-            <div className="empty">
-              <strong>Nothing tracked yet</strong>
-            </div>
+            <EmptyState title="Nothing tracked yet">
+              {isMe ? 'Add titles from the catalog.' : 'This viewer has an empty list.'}
+            </EmptyState>
           ) : (
             <table className="list-table">
               <thead>
@@ -152,22 +175,26 @@ export function ProfilePage() {
                 </tr>
               </thead>
               <tbody>
-                {list.map((entry) => (
-                  <tr key={entry.animeId}>
-                    <td>
-                      <Link to={`/anime/${entry.animeId}`}>
-                        {entry.titleEnglish || entry.titleRomaji}
-                      </Link>
-                    </td>
-                    <td>
-                      <span className="badge">{entry.status}</span>
-                    </td>
-                    <td>{entry.score ?? '—'}</td>
-                    <td>
-                      {entry.watchedEpisodes ?? 0} / {entry.totalEpisodes ?? '?'}
-                    </td>
-                  </tr>
-                ))}
+                {list.map((entry) => {
+                  const title = entry.titleEnglish || entry.titleRomaji
+                  return (
+                    <tr key={entry.animeId}>
+                      <td>
+                        <div className="list-title-cell">
+                          <PosterArt seed={entry.animeId} title={title} size="row" />
+                          <Link to={`/anime/${entry.animeId}`}>{title}</Link>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="badge">{STATUS_LABEL[entry.status]}</span>
+                      </td>
+                      <td>{entry.score ?? '—'}</td>
+                      <td>
+                        {entry.watchedEpisodes ?? 0} / {entry.totalEpisodes ?? '?'}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           )}

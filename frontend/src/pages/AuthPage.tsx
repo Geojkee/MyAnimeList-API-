@@ -38,7 +38,7 @@ export function AuthPage() {
       if (err instanceof ApiRequestError) {
         setError(err.message)
       } else {
-        setError('Something went wrong')
+        setError('Something went wrong — is the API running?')
       }
     } finally {
       setSubmitting(false)
@@ -51,8 +51,8 @@ export function AuthPage() {
         <h1>{isSignUp ? 'Join the list' : 'Welcome back'}</h1>
         <p>
           {isSignUp
-            ? 'Create an account via POST /api/v1/auth/sign-up.'
-            : 'Sign in via POST /api/v1/auth/sign-in — refresh cookie stays HTTP-only.'}
+            ? 'Create an account to track titles, score what you finish, and leave comments.'
+            : 'Sign in to sync your list and pick up where you left off.'}
         </p>
 
         <form className="form-stack" onSubmit={onSubmit}>
@@ -69,6 +69,7 @@ export function AuthPage() {
               maxLength={24}
               required
               autoComplete="username"
+              placeholder="4–24 characters"
             />
           </div>
 
@@ -85,6 +86,7 @@ export function AuthPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
+                placeholder="you@example.com"
               />
             </div>
           )}
@@ -102,24 +104,25 @@ export function AuthPage() {
               minLength={8}
               required
               autoComplete={isSignUp ? 'new-password' : 'current-password'}
+              placeholder="At least 8 characters"
             />
           </div>
 
           {error && <p className="form-error">{error}</p>}
 
           <button type="submit" className="btn btn-primary" disabled={submitting}>
-            {submitting ? 'Working…' : isSignUp ? 'Sign up' : 'Sign in'}
+            {submitting ? 'Working…' : isSignUp ? 'Create account' : 'Sign in'}
           </button>
         </form>
 
         <p className="form-hint">
           {isSignUp ? (
             <>
-              Already have an account? <Link to="/auth/sign-in">Sign in</Link>
+              Already watching? <Link to="/auth/sign-in">Sign in</Link>
             </>
           ) : (
             <>
-              New here? <Link to="/auth/sign-up">Create one</Link>
+              New here? <Link to="/auth/sign-up">Create an account</Link>
             </>
           )}
         </p>

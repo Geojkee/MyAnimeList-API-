@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { api } from '../api/endpoints'
 import { ApiRequestError } from '../api/client'
+import { EmptyState } from '../components/EmptyState'
+import { PosterArt } from '../components/PosterArt'
 import { useAuth } from '../auth/AuthContext'
 import type { UserAnimeListSummary, UserAnimeStatus } from '../types/api'
 
@@ -12,6 +14,14 @@ const STATUSES: UserAnimeStatus[] = [
   'ON_HOLD',
   'DROPPED',
 ]
+
+const STATUS_LABEL: Record<UserAnimeStatus, string> = {
+  PLAN_TO_WATCH: 'Plan to watch',
+  WATCHING: 'Watching',
+  COMPLETED: 'Completed',
+  ON_HOLD: 'On hold',
+  DROPPED: 'Dropped',
+}
 
 export function MyListPage() {
   const { user, loading: authLoading } = useAuth()
@@ -26,8 +36,7 @@ export function MyListPage() {
     setLoading(true)
     setError(null)
     try {
-      const list = await api.getUserAnimeList(user.username, nextStatus)
-      setEntries(list)
+      setEntries(await api.getUserAnimeList(user.username, nextStatus))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load list')
     } finally {
@@ -74,7 +83,7 @@ export function MyListPage() {
     <>
       <h1 className="page-title">My list</h1>
       <p className="page-lead">
-        Your tracking list for <strong>{user.username}</strong> — status, score, and progress.
+        Track status, score, and episode progress for everything you&apos;re watching.
       </p>
 
       <div className="list-toolbar">
@@ -92,23 +101,29 @@ export function MyListPage() {
           <option value="">All statuses</option>
           {STATUSES.map((s) => (
             <option key={s} value={s}>
-              {s}
+              {STATUS_LABEL[s]}
             </option>
           ))}
         </select>
-        <Link to="/" className="btn btn-ghost">
+        <Link to="/" className="btn btn-ghost btn-sm">
           Browse catalog
         </Link>
       </div>
 
       {error && <div className="status-banner status-banner--error">{error}</div>}
-      {loading && <div className="status-banner">Loading list…</div>}
+      {loading && <div className="status-banner">Loading your list…</div>}
 
       {!loading && entries.length === 0 && (
-        <div className="empty">
-          <strong>List is empty</strong>
+        <EmptyState
+          title="Your list is empty"
+          action={
+            <Link to="/" className="btn btn-primary">
+              Find something to watch
+            </Link>
+          }
+        >
           Open a title and hit “Add to my list”.
-        </div>
+        </EmptyState>
       )}
 
       {!loading && entries.length > 0 && (
@@ -123,80 +138,83 @@ export function MyListPage() {
             </tr>
           </thead>
           <tbody>
-            {entries.map((entry) => (
-              <tr key={entry.animeId}>
-                <td>
-                  <Link to={`/anime/${entry.animeId}`}>
-                    {entry.titleEnglish || entry.titleRomaji}
-                  </Link>
-                </td>
-                <td>
-                  <select
-                    className="select"
-                    value={entry.status}
-                    disabled={busyId === entry.animeId}
-                    onChange={(e) =>
-                      void updateEntry(entry.animeId, {
-                        status: e.target.value as UserAnimeStatus,
-                      })
-                    }
-                  >
-                    {STATUSES.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td>
-                  <input
-                    className="field"
-                    type="number"
-                    min={1}
-                    max={10}
-                    style={{ width: 72, padding: '0.45rem 0.6rem' }}
-                    defaultValue={entry.score ?? ''}
-                    disabled={busyId === entry.animeId}
-                    onBlur={(e) => {
-                      const raw = e.target.value
-                      if (!raw) return
-                      const score = Number(raw)
-                      if (score === entry.score) return
-                      void updateEntry(entry.animeId, { score })
-                    }}
-                  />
-                </td>
-                <td>
-                  <div className="inline-controls">
+            {entries.map((entry) => {
+              const title = entry.titleEnglish || entry.titleRomaji
+              return (
+                <tr key={entry.animeId}>
+                  <td>
+                    <div className="list-title-cell">
+                      <PosterArt seed={entry.animeId} title={title} size="row" />
+                      <Link to={`/anime/${entry.animeId}`}>{title}</Link>
+                    </div>
+                  </td>
+                  <td>
+                    <select
+                      className="select"
+                      value={entry.status}
+                      disabled={busyId === entry.animeId}
+                      onChange={(e) =>
+                        void updateEntry(entry.animeId, {
+                          status: e.target.value as UserAnimeStatus,
+                        })
+                      }
+                    >
+                      {STATUSES.map((s) => (
+                        <option key={s} value={s}>
+                          {STATUS_LABEL[s]}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td>
                     <input
                       className="field"
                       type="number"
-                      min={0}
-                      style={{ width: 72 }}
-                      defaultValue={entry.watchedEpisodes ?? 0}
+                      min={1}
+                      max={10}
+                      style={{ width: 72, padding: '0.45rem 0.6rem' }}
+                      defaultValue={entry.score ?? ''}
                       disabled={busyId === entry.animeId}
                       onBlur={(e) => {
-                        const watchedEpisodes = Number(e.target.value)
-                        if (watchedEpisodes === (entry.watchedEpisodes ?? 0)) return
-                        void updateEntry(entry.animeId, { watchedEpisodes })
+                        const raw = e.target.value
+                        if (!raw) return
+                        const score = Number(raw)
+                        if (score === entry.score) return
+                        void updateEntry(entry.animeId, { score })
                       }}
                     />
-                    <span className="user-chip">/ {entry.totalEpisodes ?? '?'}</span>
-                  </div>
-                </td>
-                <td>
-                  <button
-                    type="button"
-                    className="btn btn-danger"
-                    style={{ padding: '0.4rem 0.8rem' }}
-                    disabled={busyId === entry.animeId}
-                    onClick={() => void removeEntry(entry.animeId)}
-                  >
-                    Remove
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td>
+                    <div className="inline-controls">
+                      <input
+                        className="field"
+                        type="number"
+                        min={0}
+                        style={{ width: 72 }}
+                        defaultValue={entry.watchedEpisodes ?? 0}
+                        disabled={busyId === entry.animeId}
+                        onBlur={(e) => {
+                          const watchedEpisodes = Number(e.target.value)
+                          if (watchedEpisodes === (entry.watchedEpisodes ?? 0)) return
+                          void updateEntry(entry.animeId, { watchedEpisodes })
+                        }}
+                      />
+                      <span className="user-chip">/ {entry.totalEpisodes ?? '?'}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      className="btn btn-danger btn-sm"
+                      disabled={busyId === entry.animeId}
+                      onClick={() => void removeEntry(entry.animeId)}
+                    >
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       )}
