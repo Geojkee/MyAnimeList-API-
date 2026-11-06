@@ -84,6 +84,7 @@ chmod +x mvnw
 | API | http://localhost:8080 |
 | Swagger UI | http://localhost:8080/swagger-ui/index.html |
 | OpenAPI JSON | http://localhost:8080/v3/api-docs |
+| Web UI (Vite) | http://localhost:5173 — см. [Frontend UI](#frontend-ui) ниже |
 
 ### Остановка
 
@@ -112,6 +113,8 @@ make down-v    # остановить и удалить volume с данными
 | `make ps` | статус контейнеров |
 | `make logs` | логи Postgres |
 | `make run` | запуск API (`./mvnw spring-boot:run`) |
+| `make ui` | Vite UI на :5173 (прокси `/api` → API) |
+| `make ui-build` | сборка `frontend/dist` |
 | `make full` | Postgres + API целиком в Docker |
 | `make full-down` | остановить полный стек |
 | `make full-logs` | логи API + Postgres |
@@ -123,6 +126,31 @@ make down-v    # остановить и удалить volume с данными
 | `make restart` | перезапуск Postgres |
 
 ---
+
+## Frontend UI
+
+В каталоге [`frontend/`](frontend/) — SPA на **Vite + React + TypeScript**. В dev Vite проксирует `/api` на `http://localhost:8080`.
+
+### API + UI вместе (типичный цикл)
+
+В двух терминалах:
+
+```bash
+# 1) БД + API
+make up
+make run
+
+# 2) UI
+make ui
+# или: cd frontend && npm install && npm run dev
+```
+
+Откройте http://localhost:5173  
+
+Страницы: каталог (`/`), карточка аниме + комментарии, sign-up / sign-in, «My list», публичный профиль `/u/:username`.  
+Подробнее: [`frontend/README.md`](frontend/README.md).
+
+> Каталог пуст, пока админ не создаст тайтлы через API/Swagger (`ROLE_ADMIN`).
 
 ## Другие способы запуска
 
@@ -248,6 +276,7 @@ python3 -c "import os,base64; print(base64.b64encode(os.urandom(32)).decode())"
 - springdoc-openapi (Swagger), Lombok, Maven Wrapper
 - GitHub Actions, JaCoCo, Codecov
 - Docker Compose (Postgres; опционально API через profile `full`)
+- Frontend: Vite + React + TypeScript (`frontend/`)
 
 ## Структура
 
@@ -257,6 +286,7 @@ src/main/java/com/dwtd/myanimelist/
 ├── security/     # JWT filter, SecurityConfiguration
 └── exception/    # GlobalExceptionHandler
 src/main/resources/db/changelog/   # Liquibase V1–V7
+frontend/                          # Vite + React UI (прокси /api → :8080)
 .env.example                       # шаблон окружения
 docker-compose.yaml                # postgres (+ app с --profile full)
 Dockerfile                         # образ API
@@ -292,7 +322,8 @@ Dockerfile                         # образ API
 ## Полезные команды
 
 ```bash
-make up && make run                    # типичный dev-цикл
+make up && make run                    # типичный API-цикл
+make ui                                # UI на :5173 (нужен API)
 make full                              # весь стек в Docker
 make test                              # тесты
 make package && java -jar target/MyAnimeList-0.0.1-SNAPSHOT.jar

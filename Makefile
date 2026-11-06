@@ -7,7 +7,7 @@ COMPOSE ?= docker compose
 MVNW    ?= ./mvnw
 
 .PHONY: help env up down down-v ps logs full full-down full-logs restart \
-	run test verify package clean build
+	run test verify package clean build ui ui-install ui-build
 
 help: ## Показать список команд
 	@echo "MyAnimeList-API — make-цели:"
@@ -54,7 +54,17 @@ restart: down up ## Перезапустить Postgres
 run: env ## Запустить API локально (нужен Postgres: make up)
 	$(MVNW) spring-boot:run
 
+ui-install: ## npm install для frontend/
+	cd frontend && npm install
+
+ui: ## Запустить Vite UI на :5173 (проксирует /api → :8080)
+	cd frontend && npm install && npm run dev
+
+ui-build: ## Собрать frontend/dist
+	cd frontend && npm install && npm run build
+
 test: ## Прогнать тесты (H2, без Docker)
+
 	$(MVNW) test
 
 verify: ## Тесты + JaCoCo (как в CI)
