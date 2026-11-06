@@ -5,9 +5,9 @@ spring:
     name: MyAnimeList
 
   datasource:
-    url: ${POSTGRES_URL}
-    username: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/myanimelist}
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
 
   jpa:
     hibernate:
@@ -15,23 +15,27 @@ spring:
     show-sql: true
 
   liquibase:
-    user: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
+    user: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
     enabled: true
     change-log: classpath:/db/changelog/changelog_master.yaml
+
+server:
+  port: ${SERVER_PORT:8080}
 
 logging:
   level:
     org.hibernate.sql: DEBUG
 
 jwt:
-  secret: ${JWT_SECRET}
-  expiration: ${JWT_EXPIRATION}
+  # Base64; decoded key must be >= 32 bytes for HS256
+  secret: ${JWT_SECRET:bG9jYWwtZGV2LW9ubHktc2VjcmV0LWtleS0zMmJ5dGUh}
+  expiration: ${JWT_EXPIRATION:86400000}
 
 app:
   refresh-token:
-    duration-ms: ${REFRESH_TOKEN_DURATION}
+    duration-ms: ${REFRESH_TOKEN_DURATION:2592000000}
   cookie:
-    refresh-path: ${COOKIE_PATH}
-    max-age-seconds: ${REFRESH_TOKEN_MAX_AGE_SECONDS}
-    secure: ${COOKIE_SECURE}
+    refresh-path: ${COOKIE_PATH:/api/v1/auth}
+    max-age-seconds: ${REFRESH_TOKEN_MAX_AGE_SECONDS:2592000}
+    secure: ${COOKIE_SECURE:false}

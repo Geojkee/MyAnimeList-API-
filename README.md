@@ -3,257 +3,322 @@
 [![Java CI with Maven](https://github.com/Geojkee/MyAnimeList-API-/actions/workflows/ci.yml/badge.svg)](https://github.com/Geojkee/MyAnimeList-API-/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/Geojkee/MyAnimeList-API-/branch/master/graph/badge.svg)](https://codecov.io/gh/Geojkee/MyAnimeList-API-)
 
-REST API для каталога аниме и пользовательских списков в стиле MyAnimeList. Учебный backend на **Java 21** и **Spring Boot 4** с JWT-аутентификацией, refresh-токенами в HTTP-only cookie, ролями `ROLE_USER` / `ROLE_ADMIN`, Liquibase-миграциями и Swagger UI.
+REST API для каталога аниме и пользовательских списков (учебный проект на **Java 21** / **Spring Boot 4**).
 
-## Возможности
+JWT-аутентификация с refresh-токеном в HTTP-only cookie, каталог аниме и жанров, профили, anime list, комментарии, друзья. Схема БД — Liquibase, документация — Swagger UI.
 
-- Регистрация, вход, обновление access token и logout
-- Каталог аниме: пагинация, поиск и фильтры (`search`, `type`, `status`, `genreId`)
-- CRUD жанров (запись — только `ROLE_ADMIN`)
-- Личный anime list: статус просмотра, оценка, число эпизодов
-- Публичные и приватные профили пользователей
-- Комментарии к аниме
-- Список друзей и заявки в друзья
-- Единый формат ошибок через `GlobalExceptionHandler`
-- OpenAPI / Swagger UI
-- Интеграционные тесты на H2, CI через GitHub Actions + JaCoCo / Codecov
+## Что нужно установить
 
-## Стек
+| Инструмент | Зачем |
+|------------|--------|
+| **Java 21+** | запуск приложения |
+| **Git** | клонирование репозитория |
+| **Docker Desktop** (или Docker Engine + Compose) | PostgreSQL одной командой |
+| **Make** (опционально) | короткие команды из `Makefile` (`make up`, `make run`, …) |
+| Maven | **не обязателен** — есть `./mvnw` / `mvnw.cmd` |
 
-| Компонент | Технология |
-|-----------|------------|
-| Язык / runtime | Java 21 |
-| Framework | Spring Boot 4.0.6 |
-| Security | Spring Security, JWT (jjwt 0.12.6), BCrypt |
-| Persistence | Spring Data JPA, Hibernate, Liquibase |
-| БД | PostgreSQL 15 (runtime), H2 (tests) |
-| API docs | springdoc-openapi 2.7.0 |
-| Build | Maven Wrapper |
-| CI | GitHub Actions, JaCoCo, Codecov |
-| Local DB | Docker Compose (`postgres:15`) |
+Проверка версий:
 
-## Структура проекта
-
-```
-src/main/java/com/dwtd/myanimelist/
-├── MyAnimeListApplication.java
-├── exception/          # CustomException, ErrorResponse, GlobalExceptionHandler
-├── features/
-│   ├── anime/          # каталог аниме
-│   ├── auth/           # регистрация, login, refresh, logout
-│   ├── comment/        # комментарии к аниме
-│   ├── friendlist/     # друзья и заявки
-│   ├── genre/          # жанры
-│   ├── tracking/       # пользовательский anime list
-│   └── user/           # профили
-└── security/           # SecurityConfiguration, JwtService, JwtAuthenticationFilter
-
-src/main/resources/
-├── application.yaml
-├── application-test.yaml
-└── db/changelog/       # Liquibase (V1–V7)
+```bash
+java -version          # 21+
+docker compose version
+git --version
+make -v                # опционально
 ```
 
-## Требования
+---
 
-- Java 21+
-- Maven 3.9+ (или `./mvnw`)
-- PostgreSQL 15+ **или** Docker / Docker Compose
-- Git
+## Запуск (рекомендуемый способ)
 
-## Быстрый старт
+БД в Docker, API через Maven — удобно для разработки.
 
-### 1. Клонирование
+### Через Make (короче)
 
 ```bash
 git clone https://github.com/Geojkee/MyAnimeList-API-.git
 cd MyAnimeList-API-
+
+make up      # .env (если нет) + PostgreSQL
+make run     # Spring Boot на :8080
 ```
 
-### 2. PostgreSQL
+Список всех целей: `make` или `make help`.
 
-Через Docker Compose (из корня репозитория):
+### Без Make (те же шаги вручную)
 
 ```bash
-docker compose up -d
-```
+# 1. Клонировать
+git clone https://github.com/Geojkee/MyAnimeList-API-.git
+cd MyAnimeList-API-
 
-Сервис поднимает контейнер `mal_postgres` на порту `5432` (переопределяется через `POSTGRES_PORT`). По умолчанию: БД / пользователь / пароль — `postgres`.
+# 2. Конфиг окружения
+cp .env.example .env
 
-Либо используйте уже установленный PostgreSQL и укажите его параметры в `.env`.
+# 3. Поднять PostgreSQL
+docker compose up -d postgres
 
-### 3. Переменные окружения
+# 4. Статус БД (опционально)
+docker compose ps
 
-Приложение читает `.env` как properties-файл (`spring.config.import: optional:file:.env[.properties]`). Файл `.env` в `.gitignore` — создайте его локально.
-
-Пример `.env`:
-
-```properties
-POSTGRES_URL=jdbc:postgresql://localhost:5432/postgres
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-
-JWT_SECRET=change-me-to-a-long-random-secret-at-least-32-chars
-JWT_EXPIRATION=86400000
-
-REFRESH_TOKEN_DURATION=2592000000
-REFRESH_TOKEN_MAX_AGE_SECONDS=2592000
-COOKIE_PATH=/api/v1/auth
-COOKIE_SECURE=false
-```
-
-| Переменная | Назначение |
-|------------|------------|
-| `POSTGRES_URL` | JDBC URL PostgreSQL |
-| `POSTGRES_USER` | Пользователь БД (также для Liquibase) |
-| `POSTGRES_PASSWORD` | Пароль БД |
-| `JWT_SECRET` | Секрет подписи JWT (достаточно длинная строка) |
-| `JWT_EXPIRATION` | TTL access token, мс |
-| `REFRESH_TOKEN_DURATION` | TTL refresh token в БД, мс |
-| `REFRESH_TOKEN_MAX_AGE_SECONDS` | `Max-Age` cookie `refreshToken` |
-| `COOKIE_PATH` | `Path` cookie (обычно `/api/v1/auth`) |
-| `COOKIE_SECURE` | Флаг `Secure` у cookie (`true` для HTTPS) |
-
-Для Docker Compose дополнительно: `POSTGRES_DB`, `POSTGRES_PORT` (см. `docker-compose.yaml`).
-
-Схема БД применяется Liquibase при старте (`ddl-auto: none`).
-
-### 4. Запуск приложения
-
-```bash
+# 5. Запустить API
 ./mvnw spring-boot:run
 ```
 
-По умолчанию сервер слушает порт **8080**. Swagger UI: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html), OpenAPI JSON: `/v3/api-docs`.
+На **Windows** для API: `mvnw.cmd spring-boot:run`.  
+`Makefile` рассчитан на Linux/macOS / Git Bash / WSL; в чистом cmd удобнее команды Compose/`mvnw.cmd` вручную.
+
+Если на Linux/macOS `./mvnw` не запускается:
+
+```bash
+chmod +x mvnw
+./mvnw spring-boot:run
+```
+
+В логах должно появиться примерно: `Started MyAnimeListApplication`.  
+Миграции Liquibase применяются автоматически при старте.
+
+### Куда заходить
+
+| Что | URL |
+|-----|-----|
+| API | http://localhost:8080 |
+| Swagger UI | http://localhost:8080/swagger-ui/index.html |
+| OpenAPI JSON | http://localhost:8080/v3/api-docs |
+
+### Остановка
+
+```bash
+# остановить API: Ctrl+C в терминале, где крутится make run / spring-boot:run
+
+make down      # остановить контейнеры (данные сохранить)
+make down-v    # остановить и удалить volume с данными БД
+
+# то же без Make:
+# docker compose down
+# docker compose down -v
+```
+
+---
+
+## Makefile — краткие команды
+
+| Команда | Что делает |
+|---------|------------|
+| `make` / `make help` | список целей |
+| `make env` | создать `.env` из `.env.example` (если ещё нет) |
+| `make up` | поднять PostgreSQL |
+| `make down` | остановить контейнеры |
+| `make down-v` | остановить и удалить данные БД |
+| `make ps` | статус контейнеров |
+| `make logs` | логи Postgres |
+| `make run` | запуск API (`./mvnw spring-boot:run`) |
+| `make full` | Postgres + API целиком в Docker |
+| `make full-down` | остановить полный стек |
+| `make full-logs` | логи API + Postgres |
+| `make test` | тесты |
+| `make verify` | тесты + JaCoCo |
+| `make package` | собрать jar |
+| `make build` | собрать Docker-образ API |
+| `make clean` | `mvn clean` |
+| `make restart` | перезапуск Postgres |
+
+---
+
+## Другие способы запуска
+
+### Всё в Docker (Postgres + API)
+
+Нужен только Docker (Java на хосте не обязателен):
+
+```bash
+git clone https://github.com/Geojkee/MyAnimeList-API-.git
+cd MyAnimeList-API-
+
+make full
+# или: cp .env.example .env && docker compose --profile full up --build -d
+```
+
+API: http://localhost:8080  
+Остановка: `make full-down` (или `docker compose --profile full down`).
+
+### Свой PostgreSQL без Docker
+
+1. Создайте БД, например `myanimelist`, и пользователя с доступом к ней.
+2. `cp .env.example .env`
+3. В `.env` поправьте `POSTGRES_URL`, `POSTGRES_USER`, `POSTGRES_PASSWORD`.
+4. `./mvnw spring-boot:run` (или `mvnw.cmd spring-boot:run` на Windows).
+
+### Запуск из готового JAR
+
+```bash
+./mvnw -DskipTests package
+java -jar target/MyAnimeList-0.0.1-SNAPSHOT.jar
+```
+
+Перед этим Postgres должен быть доступен (как в `.env` / defaults).
+
+---
+
+## Проверка, что всё работает
+
+После старта API:
+
+```bash
+# каталог аниме (публичный)
+curl http://localhost:8080/api/v1/anime
+
+# регистрация
+curl -X POST http://localhost:8080/api/v1/auth/sign-up \
+  -H "Content-Type: application/json" \
+  -d '{"username":"demo_user","email":"demo@example.com","password":"password1"}'
+
+# вход (access token в поле token; refresh — в cookie)
+curl -c cookies.txt -X POST http://localhost:8080/api/v1/auth/sign-in \
+  -H "Content-Type: application/json" \
+  -d '{"username":"demo_user","password":"password1"}'
+
+# свой профиль (подставьте token из ответа)
+curl http://localhost:8080/api/v1/users/me \
+  -H "Authorization: Bearer ВАШ_ACCESS_TOKEN"
+```
+
+Дальше удобнее кликать эндпоинты в Swagger: http://localhost:8080/swagger-ui/index.html  
+В Swagger для защищённых методов: Authorize → `Bearer <token>`.
+
+---
+
+## Переменные окружения
+
+Шаблон: [`.env.example`](.env.example). Скопируйте в `.env` (файл в `.gitignore`, в git не попадёт).
+
+Spring читает `.env` как properties (`spring.config.import: optional:file:.env[.properties]`).  
+В `application.yaml` есть **локальные defaults**: без `.env` тоже стартует, если Postgres на `localhost:5432`, БД `myanimelist`, user/password `postgres`.
+
+| Переменная | По умолчанию (local) | Назначение |
+|------------|----------------------|------------|
+| `POSTGRES_URL` | `jdbc:postgresql://localhost:5432/myanimelist` | JDBC URL |
+| `POSTGRES_USER` | `postgres` | Пользователь БД / Liquibase |
+| `POSTGRES_PASSWORD` | `postgres` | Пароль БД |
+| `POSTGRES_DB` | `myanimelist` | Имя БД (Compose) |
+| `POSTGRES_PORT` | `5432` | Порт Postgres (Compose) |
+| `JWT_SECRET` | Base64-ключ в `.env.example` | Подпись JWT — **только Base64** |
+| `JWT_EXPIRATION` | `86400000` | TTL access token, мс (~1 сутки) |
+| `REFRESH_TOKEN_DURATION` | `2592000000` | TTL refresh token в БД, мс |
+| `REFRESH_TOKEN_MAX_AGE_SECONDS` | `2592000` | Max-Age cookie |
+| `COOKIE_PATH` | `/api/v1/auth` | Path cookie `refreshToken` |
+| `COOKIE_SECURE` | `false` | `true` только за HTTPS |
+| `SERVER_PORT` | `8080` | Порт приложения |
+
+Сгенерировать новый `JWT_SECRET`:
+
+```bash
+python3 -c "import os,base64; print(base64.b64encode(os.urandom(32)).decode())"
+```
+
+---
+
+## Тесты
+
+Тесты используют in-memory **H2** (профиль `test`), отдельный Postgres для них не нужен:
+
+```bash
+./mvnw test          # или: mvnw.cmd test
+./mvnw verify        # тесты + отчёт JaCoCo (как в CI)
+```
+
+---
+
+## Типичные проблемы
+
+| Симптом | Что сделать |
+|---------|-------------|
+| `Connection to localhost:5432 refused` | Не запущен Postgres: `docker compose up -d postgres` |
+| `database "myanimelist" does not exist` | Compose создаёт БД сам; при своём Postgres создайте БД вручную |
+| `Illegal base64 character` / 500 на sign-up | `JWT_SECRET` не Base64 — возьмите значение из `.env.example` или сгенерируйте командой выше |
+| Порт `8080` занят | Смените `SERVER_PORT` в `.env` или остановите другой процесс |
+| `./mvnw: Permission denied` | `chmod +x mvnw` |
+| Docker не найден | Установите Docker Desktop / Engine или используйте вариант со своим Postgres |
+
+---
+
+## Стек
+
+- Java 21, Spring Boot 4.0.6, Spring Security, JWT (jjwt)
+- Spring Data JPA + Liquibase + PostgreSQL 15 (H2 в тестах)
+- springdoc-openapi (Swagger), Lombok, Maven Wrapper
+- GitHub Actions, JaCoCo, Codecov
+- Docker Compose (Postgres; опционально API через profile `full`)
+
+## Структура
+
+```
+src/main/java/com/dwtd/myanimelist/
+├── features/     # anime, auth, comment, friendlist, genre, tracking, user
+├── security/     # JWT filter, SecurityConfiguration
+└── exception/    # GlobalExceptionHandler
+src/main/resources/db/changelog/   # Liquibase V1–V7
+.env.example                       # шаблон окружения
+docker-compose.yaml                # postgres (+ app с --profile full)
+Dockerfile                         # образ API
+```
 
 ## Аутентификация
 
-1. `POST /api/v1/auth/sign-up` — регистрация (`ROLE_USER`), в ответе access token.
-2. `POST /api/v1/auth/sign-in` — вход: access token в JSON (`token`), refresh token в HTTP-only cookie `refreshToken` (`SameSite=Strict`).
+1. `POST /api/v1/auth/sign-up` — регистрация (`ROLE_USER`), access token в ответе.
+2. `POST /api/v1/auth/sign-in` — access token в JSON (`token`), refresh в cookie `refreshToken`.
 3. Защищённые запросы: заголовок `Authorization: Bearer <accessToken>`.
-4. `POST /api/v1/auth/refresh` — ротация refresh token (из cookie) и новый access token.
-5. `POST /api/v1/auth/logout` — отзыв refresh token и очистка cookie (нужна аутентификация).
+4. `POST /api/v1/auth/refresh` — ротация refresh (из cookie).
+5. `POST /api/v1/auth/logout` — отзыв refresh (нужна аутентификация).
 
-Публичные без токена: `sign-up`, `sign-in`, `refresh`, GET каталога аниме/жанров, публичный профиль, публичный anime list, GET комментариев, Swagger.
+Публично без токена: sign-up / sign-in / refresh, GET аниме и жанров, публичный профиль и anime list, GET комментариев, Swagger.  
+`ROLE_ADMIN` — запись в каталог аниме/жанров и удаление чужих комментариев (роль выставляется в БД; отдельного admin API нет).
 
-Роли:
+## Обзор API (`/api/v1`)
 
-- `ROLE_USER` — обычный пользователь
-- `ROLE_ADMIN` — создание/изменение/удаление аниме и жанров; удаление чужих комментариев
+| Группа | Базовый путь | Заметки |
+|--------|--------------|---------|
+| Auth | `/auth` | sign-up, sign-in, refresh, logout |
+| Anime | `/anime` | фильтры `search`, `type`, `status`, `genreId`; pageable |
+| Genre | `/genre` | CRUD; запись — admin |
+| Profile | `/users/me`, `/users/{username}` | PATCH `/me` отдаёт новый token |
+| Anime list | `/users/me/animelist`, `/users/{username}/animelist` | статусы `PLAN_TO_WATCH` … `DROPPED` |
+| Comments | `/anime/{animeId}/comments` | pageable |
+| Friends | `/users/me/friends` | заявки accept/reject/cancel |
 
-Новые пользователи получают `ROLE_USER`. Назначение `ROLE_ADMIN` в API не предусмотрено — роль выставляется в БД при необходимости.
+Типы аниме: `TV`, `MOVIE`, `OVA`, `SPECIAL`.  
+Статусы аниме: `ANNOUNCED`, `ONGOING`, `FINISHED`.  
+Статусы списка: `PLAN_TO_WATCH`, `WATCHING`, `COMPLETED`, `ON_HOLD`, `DROPPED`.
 
-## Обзор API
-
-Базовый префикс: `/api/v1`.
-
-### Auth — `/api/v1/auth`
-
-| Метод | Путь | Доступ | Описание |
-|-------|------|--------|----------|
-| POST | `/sign-up` | public | Регистрация |
-| POST | `/sign-in` | public | Вход |
-| POST | `/refresh` | public (cookie) | Обновление токенов |
-| POST | `/logout` | authenticated | Выход |
-
-### Anime — `/api/v1/anime`
-
-| Метод | Путь | Доступ | Описание |
-|-------|------|--------|----------|
-| GET | `/` | public | Список (pageable; query: `search`, `type`, `status`, `genreId`) |
-| GET | `/{id}` | public | Аниме по id |
-| POST | `/` | `ROLE_ADMIN` | Создать |
-| PUT | `/{id}` | `ROLE_ADMIN` | Обновить |
-| DELETE | `/{id}` | `ROLE_ADMIN` | Удалить |
-
-Типы аниме: `TV`, `MOVIE`, `OVA`, `SPECIAL`. Статусы: `ANNOUNCED`, `ONGOING`, `FINISHED`.
-
-### Genre — `/api/v1/genre`
-
-| Метод | Путь | Доступ | Описание |
-|-------|------|--------|----------|
-| GET | `/` | public | Все жанры |
-| GET | `/{id}` | public | Жанр по id |
-| POST | `/` | `ROLE_ADMIN` | Создать |
-| PUT | `/{id}` | `ROLE_ADMIN` | Обновить |
-| DELETE | `/{id}` | `ROLE_ADMIN` | Удалить |
-
-### User profile — `/api/v1/users`
-
-| Метод | Путь | Доступ | Описание |
-|-------|------|--------|----------|
-| GET | `/me` | authenticated | Свой профиль (включая email) |
-| PATCH | `/me` | authenticated | Обновить username/email (новый access token в ответе) |
-| GET | `/{username}` | public | Публичный профиль |
-
-### User anime list — `/api/v1/users`
-
-| Метод | Путь | Доступ | Описание |
-|-------|------|--------|----------|
-| POST | `/me/animelist` | authenticated | Добавить аниме (`animeId`) |
-| GET | `/{username}/animelist` | public | Список пользователя (опционально `?status=`) |
-| PATCH | `/me/animelist/{animeId}` | authenticated | Обновить `status` / `score` / `watchedEpisodes` |
-| DELETE | `/me/animelist/{animeId}` | authenticated | Удалить из списка |
-
-Статусы списка: `PLAN_TO_WATCH`, `WATCHING`, `COMPLETED`, `ON_HOLD`, `DROPPED`. Оценка: 1–10.
-
-### Comments — `/api/v1/anime/{animeId}/comments`
-
-| Метод | Путь | Доступ | Описание |
-|-------|------|--------|----------|
-| GET | `/` | public | Комментарии (pageable) |
-| POST | `/` | authenticated | Создать (`text`, до 500 символов) |
-| DELETE | `/{commentId}` | authenticated | Удалить (автор или `ROLE_ADMIN`) |
-
-### Friends — `/api/v1/users/me/friends`
-
-Все эндпоинты требуют аутентификации.
-
-| Метод | Путь | Описание |
-|-------|------|----------|
-| POST | `/{friendId}` | Отправить заявку |
-| GET | `/` | Список друзей |
-| GET | `/requests/incoming` | Входящие заявки |
-| GET | `/requests/outgoing` | Исходящие заявки |
-| PATCH | `/requests/{requestId}/accept` | Принять |
-| PATCH | `/requests/{requestId}/reject` | Отклонить |
-| DELETE | `/requests/{requestId}` | Отменить исходящую |
-| DELETE | `/{friendId}` | Удалить из друзей |
-
-Статусы заявок в модели: `PENDING`, `ACCEPTED`, `REJECTED`, `BLOCKED`.
-
-## Скрипты и команды
+## Полезные команды
 
 ```bash
-./mvnw spring-boot:run          # запуск приложения
-./mvnw test                     # тесты
-./mvnw verify                   # тесты + отчёт JaCoCo (как в CI)
-./mvnw package                  # сборка jar
-docker compose up -d            # PostgreSQL
-docker compose down             # остановить PostgreSQL
-```
+make up && make run                    # типичный dev-цикл
+make full                              # весь стек в Docker
+make test                              # тесты
+make package && java -jar target/MyAnimeList-0.0.1-SNAPSHOT.jar
 
-Профиль `test` (`application-test.yaml`): in-memory H2, Liquibase выключен, `ddl-auto: create-drop`. Интеграционные тесты наследуют `BaseIntegrationTest` (`@SpringBootTest` + MockMvc).
+# эквиваленты без Make:
+./mvnw spring-boot:run
+./mvnw test
+./mvnw verify
+./mvnw -DskipTests package
+docker compose up -d postgres
+docker compose --profile full up --build -d
+docker compose down
+docker compose down -v
+```
 
 ## CI
 
-Workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml):
-
-- триггеры: push на любую ветку, pull request в `master`
-- JDK 21 (Temurin), `mvn -B verify`
-- артефакт JaCoCo, загрузка покрытия в Codecov (`CODECOV_TOKEN`)
-
-## Деплой
-
-В репозитории нет Dockerfile приложения и готовой конфигурации деплоя. Для локальной разработки используется только `docker-compose.yaml` с PostgreSQL. Для окружения нужно самостоятельно собрать jar (`./mvnw package`) и задать переменные из раздела выше.
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml): push / PR → `master`, JDK 21, `mvn -B verify`, Codecov.
 
 ## Заметки
 
-- Учебный проект; секреты только через env / `.env`, не коммитьте их в git.
-- CORS разрешает origin patterns `*`, credentials включены.
-- Подробные схемы запросов/ответов — в Swagger UI после запуска.
-- Вкладки и детали эндпоинтов удобнее смотреть в `/swagger-ui.html`.
+- Учебный проект: дефолтные секреты только для local. В проде задайте свои env.
+- `JWT_SECRET` читается как **Base64** (`Decoders.BASE64` в `JwtService`). Обычная строка с `-` даст 500 при выдаче токена.
+- CORS: origin patterns `*`, credentials включены.
+- Для «просто посмотреть» удобен Docker profile `full`; для разработки кода — Postgres в Compose + `./mvnw spring-boot:run`.
 
 ## Лицензия
 
-Лицензия в `pom.xml` не указана. Уточняйте у автора репозитория при необходимости.
+В `pom.xml` не указана — уточняйте у автора репозитория.

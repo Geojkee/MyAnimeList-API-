@@ -5,19 +5,46 @@ services:
     image: postgres:15
     container_name: mal_postgres
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-postgres}
-      POSTGRES_USER:  ${POSTGRES_USER:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-myanimelist}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-myanimelist}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     restart: unless-stopped
-
     command:
       - "postgres"
       - "-c"
       - "max_connections=100"
+
+  # Полный стек: docker compose --profile full up --build
+  app:
+    profiles: ["full"]
+    build: .
+    container_name: mal_api
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    environment:
+      POSTGRES_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-myanimelist}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      JWT_SECRET: ${JWT_SECRET:-bG9jYWwtZGV2LW9ubHktc2VjcmV0LWtleS0zMmJ5dGUh}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      REFRESH_TOKEN_DURATION: ${REFRESH_TOKEN_DURATION:-2592000000}
+      REFRESH_TOKEN_MAX_AGE_SECONDS: ${REFRESH_TOKEN_MAX_AGE_SECONDS:-2592000}
+      COOKIE_PATH: ${COOKIE_PATH:-/api/v1/auth}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      SERVER_PORT: 8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   postgres_data:
