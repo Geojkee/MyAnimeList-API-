@@ -227,7 +227,7 @@ python3 -c "import os,base64; print(base64.b64encode(os.urandom(32)).decode())"
 
 - один пользователь `ROLE_ADMIN`
 - фиксированный набор жанров (Action, Adventure, Comedy, Drama, Fantasy, Horror, Mecha, Music, Mystery, Romance, Sci-Fi, Slice of Life, Sports, Supernatural, Thriller)
-- 100 разных аниме: romaji- и english-название, тип (`TV`, `MOVIE`, `OVA`, `SPECIAL`), статус `FINISHED`, число эпизодов, жанры и дата выхода (`release_date`). В каталоге известен год премьеры, поэтому в дату пишется 1 января этого года; тот же год есть в синопсисе (`premiered in YYYY`)
+- 100 разных аниме: romaji- и english-название, тип (`TV`, `MOVIE`, `OVA`, `SPECIAL`), статус `FINISHED`, число эпизодов, жанры, дата выхода (`release_date`) и короткий синопсис. В каталоге известен год премьеры, поэтому в дату пишется 1 января этого года
 
 Повторный старт строки не дублирует. Сид пропускается, если уже есть пользователь с именем или почтой администратора **или** в `genres` / `anime` уже есть хотя бы одна строка. Пароль записывается только в этот момент: новый `SEED_ADMIN_PASSWORD` подхватывается на пустой базе.
 
