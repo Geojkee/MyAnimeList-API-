@@ -61,3 +61,12 @@ databaseChangeLog:
         relativeToChangeFile: true
         splitStatements: true
         endDelimiter: ;
+
+  - changeSet:
+      id: V8__add_release_date_to_anime.sql
+      author: George (generated)
+      sqlFile:
+        path: db/changelog/changes/V8__add_release_date_to_anime.sql
+        relativeToChangeFile: true
+        splitStatements: true
+        endDelimiter: ;
