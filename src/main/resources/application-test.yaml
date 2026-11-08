@@ -1,3 +1,4 @@
+# Profile "test": DatabaseSeedRunner is @Profile("!test") and does not run.
 spring:
   config:
     import: ""

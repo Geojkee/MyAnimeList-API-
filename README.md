@@ -75,7 +75,8 @@ chmod +x mvnw
 ```
 
 В логах должно появиться примерно: `Started MyAnimeListApplication`.  
-Миграции Liquibase применяются автоматически при старте.
+Миграции Liquibase применяются автоматически при старте.  
+На пустой базе тот же старт один раз записывает администратора, жанры и 100 аниме — см. [Первый запуск](#первый-запуск-начальные-данные).
 
 ### Куда заходить
 
@@ -208,6 +209,9 @@ Spring читает `.env` как properties (`spring.config.import: optional:fi
 | `COOKIE_PATH` | `/api/v1/auth` | Path cookie `refreshToken` |
 | `COOKIE_SECURE` | `false` | `true` только за HTTPS |
 | `SERVER_PORT` | `8080` | Порт приложения |
+| `SEED_ADMIN_USERNAME` | `admin` | Логин администратора для первого запуска |
+| `SEED_ADMIN_EMAIL` | `admin@myanimelist.local` | Почта этого администратора |
+| `SEED_ADMIN_PASSWORD` | `local-admin` | Пароль администратора. В проде замените **до** первого запуска |
 
 Сгенерировать новый `JWT_SECRET`:
 
@@ -216,6 +220,32 @@ python3 -c "import os,base64; print(base64.b64encode(os.urandom(32)).decode())"
 ```
 
 ---
+
+## Первый запуск: начальные данные
+
+`DatabaseSeedRunner` срабатывает один раз, когда база ещё пустая (профиль `test` его не загружает):
+
+- один пользователь `ROLE_ADMIN`
+- фиксированный набор жанров (Action, Adventure, Comedy, Drama, Fantasy, Horror, Mecha, Music, Mystery, Romance, Sci-Fi, Slice of Life, Sports, Supernatural, Thriller)
+- 100 разных аниме: romaji- и english-название, тип (`TV`, `MOVIE`, `OVA`, `SPECIAL`), статус `FINISHED`, число эпизодов, жанры. Года премьеры в схеме нет — он пишется в синопсис (`premiered in YYYY`)
+
+Повторный старт строки не дублирует. Сид пропускается, если уже есть пользователь с именем или почтой администратора **или** в `genres` / `anime` уже есть хотя бы одна строка. Пароль записывается только в этот момент: новый `SEED_ADMIN_PASSWORD` подхватывается на пустой базе.
+
+Локальный вход, пока переменные не переопределены:
+
+| Поле | Значение |
+|------|----------|
+| username | `admin` |
+| password | `local-admin` |
+| email | `admin@myanimelist.local` |
+
+```bash
+curl -c cookies.txt -X POST http://localhost:8080/api/v1/auth/sign-in \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"local-admin"}'
+```
+
+Пароль читается из `SEED_ADMIN_PASSWORD` (в коде его нет). Минимум 8 символов и без пробелов — иначе вход через API не пройдёт проверку. В проде задайте свой пароль в окружении до первого старта.
 
 ## Тесты
 
@@ -254,6 +284,7 @@ python3 -c "import os,base64; print(base64.b64encode(os.urandom(32)).decode())"
 ```
 src/main/java/com/dwtd/myanimelist/
 ├── features/     # anime, auth, comment, friendlist, genre, tracking, user
+├── seed/         # DatabaseSeedRunner — первый старт
 ├── security/     # JWT filter, SecurityConfiguration
 └── exception/    # GlobalExceptionHandler
 src/main/resources/db/changelog/   # Liquibase V1–V7
@@ -271,7 +302,8 @@ Dockerfile                         # образ API
 5. `POST /api/v1/auth/logout` — отзыв refresh (нужна аутентификация).
 
 Публично без токена: sign-up / sign-in / refresh, GET аниме и жанров, публичный профиль и anime list, GET комментариев, Swagger.  
-`ROLE_ADMIN` — запись в каталог аниме/жанров и удаление чужих комментариев (роль выставляется в БД; отдельного admin API нет).
+`ROLE_ADMIN` — запись в каталог аниме/жанров и удаление чужих комментариев (роль выставляется в БД; отдельного admin API нет).  
+При первом старте создаётся локальный администратор `admin` / `local-admin` — см. [Первый запуск](#первый-запуск-начальные-данные).
 
 ## Обзор API (`/api/v1`)
 
