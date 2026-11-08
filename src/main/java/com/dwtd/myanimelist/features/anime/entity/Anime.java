@@ -11,6 +11,7 @@ import lombok.*;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -52,6 +53,10 @@ public class Anime {
 
     @Column(name = "synopsis", columnDefinition = "TEXT")
     private String synopsis;
+
+    @Column(name = "release_date")
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate releaseDate;
 
     @Column(name = "created_at")
     @Builder.Default

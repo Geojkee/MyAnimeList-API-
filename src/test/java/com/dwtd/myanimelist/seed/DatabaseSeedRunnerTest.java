@@ -167,7 +167,10 @@ class DatabaseSeedRunnerTest {
             assertThat(row.getStatus()).isEqualTo(AnimeStatus.FINISHED);
             assertThat(row.getEpisodeCount()).isPositive();
             assertThat(row.getGenres()).isNotEmpty();
-            assertThat(row.getSynopsis()).containsPattern("premiered in \\d{4}");
+            assertThat(row.getReleaseDate()).isNotNull();
+            assertThat(row.getReleaseDate().getMonthValue()).isEqualTo(1);
+            assertThat(row.getReleaseDate().getDayOfMonth()).isEqualTo(1);
+            assertThat(row.getSynopsis()).contains("premiered in " + row.getReleaseDate().getYear());
         });
         assertThat(anime).filteredOn(row -> row.getType() == AnimeType.MOVIE)
                 .allSatisfy(row -> assertThat(row.getEpisodeCount()).isEqualTo(1));

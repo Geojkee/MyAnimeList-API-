@@ -18,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -159,6 +160,8 @@ public class DatabaseSeedRunner implements ApplicationRunner {
                 .episodeCount(row.episodeCount())
                 .status(row.status())
                 .synopsis(synopsis(row))
+                // Catalog stores the premiere year; the day is unknown, so the date is 1 January.
+                .releaseDate(LocalDate.of(row.year(), 1, 1))
                 .build();
         anime.setGenres(genres);
         return anime;
